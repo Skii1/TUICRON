@@ -38,6 +38,7 @@ fn main() -> io::Result<()> {
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<bool> {
     //Main APP loop
     loop {
+        //todo? for self, learn closures more, might be helpful
         terminal.draw(|f| ui(f, app))?;
         key_handler(app);
     }
@@ -58,7 +59,7 @@ fn key_handler(app: &mut App) {
                             app.next();
                         }
                         KeyCode::Char('s') => {
-                            app.prev();
+                            app.previous();
                             ();
                         }
                         _ => {}

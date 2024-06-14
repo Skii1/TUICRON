@@ -7,8 +7,8 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, CurrentTab, CurrentlyEditing, StatefulList};
-pub fn ui(f: &mut Frame, app: &App) {
+use crate::app::{App, CurrentTab, CurrentlyEditing};
+pub fn ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -37,17 +37,12 @@ pub fn ui(f: &mut Frame, app: &App) {
     
     let mut state = ListState::default().with_selected(Some(0));
     let items = ["Continue", "New Game", "Exit"];
-    let mut event = StatefulList::new(items);
     let main_menu = List::new(items)
         .block(Block::bordered().title("Main Menu"))
         .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
         .highlight_symbol(">>")
         .repeat_highlight_symbol(true);
-
-    *state.offset_mut() = 0;
-    state.select(Some(2));
-
-    f.render_stateful_widget(main_menu, chunks[1], &mut event.state);
+    f.render_stateful_widget(main_menu, chunks[1], &mut app.state);
 
     let current_navigation_text = vec![
         // The first half of the text

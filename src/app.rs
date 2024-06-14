@@ -31,6 +31,7 @@ pub struct App {
     // pub tab_selected:u8, too verbose? unneeded? just get index and process in event handler
     pub currently_editing: Option<CurrentlyEditing>,
     pub state: ListState,
+    pub items: Vec<String>,
 }
 
 //App method, pass to main
@@ -45,19 +46,51 @@ impl App {
             tab_index: Some(0),
             currently_editing: None,
             state: ListState::default(),
+            items: vec![
+                String::from("Item1"),
+                String::from("Item2"),
+                String::from("Item3")],
         }
+    }
+    pub fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
     }
     //app functions
 }
 
 //StatefulList Structure
 //traits could help with list implementation. Get a trait that increments/decrements using the List struct
-pub struct ListEvent {
+/*
+pub struct MenuList {
     pub state: ListState,
     pub items: Vec<String>,
 }
 
-impl ListEvent {
+impl MenuList {
     pub fn with_items(items: Vec<String>) -> Self {
         Self {
             state: ListState::default(),
@@ -93,3 +126,5 @@ impl ListEvent {
         self.state.select(Some(i));
     }
 }
+
+ */
