@@ -8,7 +8,7 @@ mod ui;
 
 use crate::{
     app::{App, ScreenState, CurrentTab},
-    ui::ui,
+    ui::*,
 };
 
 //boilerplate
@@ -43,7 +43,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
     }
 }
 
-
 fn key_handler(app: &mut App) {
         if let Ok(Event::Key(key)) = event::read() {
             if key.kind == event::KeyEventKind::Press {
@@ -60,6 +59,7 @@ fn key_handler(app: &mut App) {
                         }
                         KeyCode::Char('s') => {
                             app.prev();
+                            ();
                         }
                         _ => {}
                     },
@@ -84,7 +84,7 @@ fn key_handler(app: &mut App) {
 }
 //boilerplate END
 
-//todo? pass ui framework to "App"
+//todo pass ui framework to "App" DONE
 //ui and template code HERE. commented while building app structure.
 /*
 fn ui(frame: &mut Frame) {

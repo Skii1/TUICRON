@@ -7,7 +7,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, CurrentTab, CurrentlyEditing};
+use crate::app::{App, CurrentTab, CurrentlyEditing, StatefulList};
 pub fn ui(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -29,9 +29,15 @@ pub fn ui(f: &mut Frame, app: &App) {
         .block(title_block);
 
     f.render_widget(title, chunks[0]);
-
+    
+    //list thing, 7 weeks still no work
+    //call List struct in key handler and do things i think
+    //or just call the next function directly, will store the value in the new struct and be fetched in ui?
+    
+    
     let mut state = ListState::default().with_selected(Some(0));
     let items = ["Continue", "New Game", "Exit"];
+    let mut event = StatefulList::new(items);
     let main_menu = List::new(items)
         .block(Block::bordered().title("Main Menu"))
         .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
@@ -41,7 +47,7 @@ pub fn ui(f: &mut Frame, app: &App) {
     *state.offset_mut() = 0;
     state.select(Some(2));
 
-    f.render_stateful_widget(main_menu, chunks[1], &mut state);
+    f.render_stateful_widget(main_menu, chunks[1], &mut event.state);
 
     let current_navigation_text = vec![
         // The first half of the text

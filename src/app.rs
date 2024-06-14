@@ -51,13 +51,14 @@ impl App {
 }
 
 //StatefulList Structure
-pub struct StatefulList<T> {
+//traits could help with list implementation. Get a trait that increments/decrements using the List struct
+pub struct ListEvent {
     pub state: ListState,
-    pub items: Vec<T>,
+    pub items: Vec<String>,
 }
 
-impl<T> StatefulList<T> {
-    pub fn with_items(items: Vec<T>) -> Self {
+impl ListEvent {
+    pub fn with_items(items: Vec<String>) -> Self {
         Self {
             state: ListState::default(),
             items,
