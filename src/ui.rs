@@ -32,15 +32,40 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     f.render_widget(title, chunks[0]);
     
     //MAIN CHUNKS
+    let body_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Min(4),
+            Constraint::Percentage(60),
+            Constraint::Min(1),
+        ])
+        .split(chunks[1]);
     
+    let field_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(70),
+            Constraint::Percentage(30),
+        ])
+        .split(body_chunks[1]);
     //MAIN MENU
     let main_menu = List::new(app.items.clone())
         .block(Block::bordered().title("Main Menu"))
         .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
-        .highlight_symbol(">>")
+        .highlight_symbol(">> ")
         .repeat_highlight_symbol(true);
-    f.render_stateful_widget(main_menu, chunks[1], &mut app.state);
-
+    f.render_stateful_widget(main_menu, body_chunks[0], &mut app.state);
+    
+    let schedule_block = Paragraph::new("Test test")
+        .block(Block::bordered().title("Set Schedule"));
+    
+    f.render_widget(schedule_block, field_chunks[0]);
+    
+    let path_block = Paragraph::new("Script Path : /home/pi/scripts/do.sh")
+        .block(Block::bordered().title("Script Path"));
+    
+    f.render_widget(path_block, field_chunks[1]);
+    //FOOTER
     let current_navigation_text = vec![
         // The first half of the text
         match app.selected_tab {
@@ -115,12 +140,12 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         f.render_widget(Clear, f.size()); //this clears the entire screen and anything already drawn
         let popup_block = Block::default()
             .title("Y/N")
-            .borders(Borders::NONE)
-            .style(Style::default().bg(Color::DarkGray));
+            .borders(Borders::TOP).title("Exit?")
+            .style(Style::default().bg(Color::Rgb(7, 3, 252)));
 
         let exit_text = Text::styled(
             "Would you like exit the app? (Y/N)",
-            Style::default().fg(Color::Red),
+            Style::default().fg(Color::White),
         );
         // the `trim: false` will stop the text from being cut off when over the edge of the block
         let exit_paragraph = Paragraph::new(exit_text)
