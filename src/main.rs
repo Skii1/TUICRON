@@ -7,7 +7,7 @@ mod app;
 mod ui;
 
 use crate::{
-    app::{App, ScreenState, CurrentTab},
+    app::{App, CurrentTab, CurrentMenu},
     ui::*,
 };
 
@@ -16,10 +16,9 @@ fn main() -> io::Result<()> {
     //Terminal init
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
+    
     let backend = CrosstermBackend::new(stdout());
     let mut terminal = Terminal::new(backend)?;
-    //todo? : Should the backend process be in a new "tui" file or stay in main?
-    //create app instance
     let mut app = App::new();
     let res = run_app(&mut terminal, &mut app);
 
@@ -39,36 +38,46 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
     //Main APP loop
     loop {
         //todo? for self, learn closures more, might be helpful
-        terminal.draw(|f| ui(f, app))?;
-        key_handler(app);
+            terminal.draw(|f| ui(f, app))?;
+            key_handler(app);
     }
 }
-
+//todo? Add selection of the new item, change the screen state depending on the selected type. Make new menus.
 fn key_handler(app: &mut App) {
         if let Ok(Event::Key(key)) = event::read() {
             if key.kind == event::KeyEventKind::Press {
+                match key.code {
+                KeyCode::Char('q') => {
+                    app.selected_tab = CurrentTab::Options;
+                }
+                KeyCode::Esc => {
+                    app.selected_tab = CurrentTab::Exit;
+                }
+                KeyCode::Char('w') => {
+                    app.next();
+                }
+                KeyCode::Char('s') => {
+                    app.previous();
+                }
+                KeyCode::Enter => {
+                    app.change_menu();
+                }
+                _ => {}
+            };
                 match app.selected_tab {
+                    //Main Menu key binds
                     CurrentTab::Menu => match key.code {
                         KeyCode::Char('q') => {
                             app.selected_tab = CurrentTab::Options;
                         }
-                        KeyCode::Esc => {
-                            app.selected_tab = CurrentTab::Exit;
-                        }
-                        KeyCode::Char('w') => {
-                            app.next();
-                        }
-                        KeyCode::Char('s') => {
-                            app.previous();
-                            ();
-                        }
                         _ => {}
                     },
-
+                    //Options Key Binds
                     CurrentTab::Options => match key.code {
                         // KeyCode::Char('v') =>
                         _ => {}
                     },
+                    //Exit Key Binds
                     CurrentTab::Exit => match key.code {
                         KeyCode::Char('y') => {
                             //app.exit;
@@ -79,7 +88,18 @@ fn key_handler(app: &mut App) {
 
                         _ => {}
                     },
-                }
+                    CurrentTab::Edit => match key.code {
+                        KeyCode::Char('n') => {
+                            
+                        }
+                        _ => {}
+                    },
+
+                    CurrentTab::New => match key.code {
+                        KeyCode::Char('n') => {}
+                        _ => {}
+                    }
+                };
             }
         }
 }

@@ -1,37 +1,35 @@
 use std::io;
 use ratatui::{prelude::*, widgets::*};
 
-const MENU_OPTIONS: [&str; 3] = [
-    "Enter", "Options", "Exit"
-];
-pub enum ScreenState {
-    Main,
-    Tab,
-    List,
-    Exit,
-}
 //GUIDE CODE
 pub enum CurrentTab {
     Menu,
+    New,
+    Edit,
+    Options,
+    Exit,
+}
+//replace with tabs
+pub enum CurrentMenu {
+    Main,
+    Edit,
+    View,
     Options,
     Exit,
 }
 //GUIDE CODE
 pub enum CurrentlyEditing {
-    Key,
-    Value,
+    Time,
+    Script,
 }
 pub struct App {
-    pub selected_screen: ScreenState,
     pub selected_tab: CurrentTab,
     pub key_input: String,
-    pub list_index: Option<u8>,
-    //pub list_selected: u8, too verbose? unneeded? just get index and process in event handler
-    pub tab_index: Option<u8>,
-    // pub tab_selected:u8, too verbose? unneeded? just get index and process in event handler
     pub currently_editing: Option<CurrentlyEditing>,
     pub state: ListState,
     pub items: Vec<String>,
+    pub selected_option: Option<usize>,
+    pub exit: bool
 }
 
 //App method, pass to main
@@ -39,17 +37,17 @@ impl App {
     pub fn new() -> App {
         //initialize values part of App struct
         App {
-            selected_screen: ScreenState::Main,
             selected_tab: CurrentTab::Menu,
             key_input: String::new(),
-            list_index: Some(0),
-            tab_index: Some(0),
             currently_editing: None,
-            state: ListState::default(),
+            state: ListState::default().with_selected(Some(0)),
             items: vec![
-                String::from("Item1"),
-                String::from("Item2"),
-                String::from("Item3")],
+                String::from("New"),
+                String::from("Edit"),
+                String::from("Options"),
+                String::from("Exit")],
+            selected_option: Some(0),
+            exit: false,
         }
     }
     pub fn previous(&mut self) {
@@ -79,7 +77,32 @@ impl App {
         };
         self.state.select(Some(i));
     }
-    //app functions
+    
+    pub fn change_menu(&mut self) {
+        match self.state.selected() {
+            Some(0) => {
+                self.selected_tab = CurrentTab::New
+            }
+            Some(1) => {
+                self.selected_tab = CurrentTab::Edit
+            }
+            Some(2) => {
+                self.selected_tab = CurrentTab::Options
+            }
+            Some(3) => {
+                self.selected_tab = CurrentTab::Exit
+            }
+            None => {
+                self.selected_tab = CurrentTab::Menu
+            }
+            _ => {
+                self.selected_tab = CurrentTab::Menu
+            }
+        };
+    }
+    pub fn exit(&mut self){
+        self.exit = true;
+    }
 }
 
 //StatefulList Structure

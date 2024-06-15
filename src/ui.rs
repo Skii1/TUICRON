@@ -17,7 +17,8 @@ pub fn ui(f: &mut Frame, app: &mut App) {
             Constraint::Length(3),
         ])
         .split(f.size());
-
+    
+    //TITLE
     let title_block = Block::default()
         .borders(Borders::ALL)
         .style(Style::default());
@@ -30,14 +31,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     f.render_widget(title, chunks[0]);
     
-    //list thing, 7 weeks still no work
-    //call List struct in key handler and do things i think
-    //or just call the next function directly, will store the value in the new struct and be fetched in ui?
+    //MAIN CHUNKS
     
-    
-    let mut state = ListState::default().with_selected(Some(0));
-    let items = ["Continue", "New Game", "Exit"];
-    let main_menu = List::new(items)
+    //MAIN MENU
+    let main_menu = List::new(app.items.clone())
         .block(Block::bordered().title("Main Menu"))
         .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
         .highlight_symbol(">>")
@@ -47,10 +44,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     let current_navigation_text = vec![
         // The first half of the text
         match app.selected_tab {
-            CurrentTab::Menu => Span::styled("Normal Mode", Style::default().fg(Color::Green)),
-            CurrentTab::Options => {
-                Span::styled("Editing Mode", Style::default().fg(Color::Yellow))
-            }
+            CurrentTab::Menu => Span::styled("CRON Edit", Style::default().fg(Color::Green)),
+            CurrentTab::New => Span::styled("New CRON Job", Style::default().fg(Color::Green)),
+            CurrentTab::Edit => Span::styled("Edit Existing CRON Job", Style::default().fg(Color::Green)),
+            CurrentTab::Options => Span::styled("Options", Style::default().fg(Color::Yellow)),
             CurrentTab::Exit => Span::styled("Exiting", Style::default().fg(Color::LightRed)),
         }
             .to_owned(),
@@ -60,10 +57,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         {
             if let Some(editing) = &app.currently_editing {
                 match editing {
-                    CurrentlyEditing::Key => {
+                    CurrentlyEditing::Time => {
                         Span::styled("Editing Json Key", Style::default().fg(Color::Green))
                     }
-                    CurrentlyEditing::Value => {
+                    CurrentlyEditing::Script => {
                         Span::styled("Editing Json Value", Style::default().fg(Color::LightGreen))
                     }
                 }
@@ -79,20 +76,29 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     let key_instructions = {
         match app.selected_tab {
             CurrentTab::Menu => Span::styled(
-            "Options <l> | Exit <Esc>",
+            "Navigate Menu ( ↑ ↓ ← →) | Select (Enter)",
             Style::default().fg(Color::Cyan),
             ),
-            CurrentTab::Options => Span::styled(
-             "Controls <c> | Preferences <p>",
+            CurrentTab::New => Span::styled(
+             "Make new etc <N>",
              Style::default().fg(Color::Yellow),
             ),
+            CurrentTab::Edit => Span::styled(
+                "Edit etc <E>",
+                Style::default().fg(Color::Red),
+            ),
+            CurrentTab::Options => Span::styled(
+                "Controls <C> | Preferences <P>",
+                Style::default().fg(Color::Red),
+            ),
             CurrentTab::Exit => Span::styled(
-                "Quit <q>",
+                "Quit",
                 Style::default().fg(Color::Red),
             ),
         }
     };
 
+    //FOOTER
     let key_tips_footer =
     Paragraph::new(Line::from(key_instructions)).block(Block::default().borders(Borders::ALL));
 
@@ -104,6 +110,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     f.render_widget(tab_footer, footer_chunks[0]);
     f.render_widget(key_tips_footer, footer_chunks[1]);
 
+    //EXIT MENU
     if let CurrentTab::Exit = app.selected_tab {
         f.render_widget(Clear, f.size()); //this clears the entire screen and anything already drawn
         let popup_block = Block::default()
@@ -112,7 +119,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
             .style(Style::default().bg(Color::DarkGray));
 
         let exit_text = Text::styled(
-            "Would you like to output the buffer as json? (y/n)",
+            "Would you like exit the app? (Y/N)",
             Style::default().fg(Color::Red),
         );
         // the `trim: false` will stop the text from being cut off when over the edge of the block
