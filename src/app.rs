@@ -29,7 +29,8 @@ pub struct App {
     pub state: ListState,
     pub items: Vec<String>,
     pub selected_option: Option<usize>,
-    pub exit: bool
+    pub exit: bool,
+    //pub body_layout: Rect,
 }
 
 //App method, pass to main
@@ -42,12 +43,15 @@ impl App {
             currently_editing: None,
             state: ListState::default().with_selected(Some(0)),
             items: vec![
+                String::from("Menu"),
                 String::from("New"),
                 String::from("Edit"),
                 String::from("Options"),
                 String::from("Exit")],
             selected_option: Some(0),
             exit: false,
+            //main_layout: Layout
+            //body_layout: Layout::default().direction(Direction::Vertical).constraints([Constraint::Percentage(100)]).split(chunks[1])
         }
     }
     pub fn previous(&mut self) {
@@ -81,22 +85,25 @@ impl App {
     pub fn change_menu(&mut self) {
         match self.state.selected() {
             Some(0) => {
-                self.selected_tab = CurrentTab::New
+                self.selected_tab = CurrentTab::Menu;
             }
             Some(1) => {
-                self.selected_tab = CurrentTab::Edit
+                self.selected_tab = CurrentTab::New;
             }
             Some(2) => {
-                self.selected_tab = CurrentTab::Options
+                self.selected_tab = CurrentTab::Edit;
             }
             Some(3) => {
-                self.selected_tab = CurrentTab::Exit
+                self.selected_tab = CurrentTab::Options;
+            }
+            Some(4) => {
+                self.selected_tab = CurrentTab::Exit;
             }
             None => {
-                self.selected_tab = CurrentTab::Menu
+                self.selected_tab = CurrentTab::Menu;
             }
             _ => {
-                self.selected_tab = CurrentTab::Menu
+                self.selected_tab = CurrentTab::Menu;
             }
         };
     }

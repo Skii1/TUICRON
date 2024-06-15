@@ -1,3 +1,4 @@
+use std::error::Error;
 use crossterm::event::DisableMouseCapture;
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -17,7 +18,7 @@ use crate::{
 };
 
 //boilerplate
-fn main() -> io::Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     //Terminal init
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
@@ -43,7 +44,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
     //Main APP loop
     while !app.exit {
         //todo? for self, learn closures more, might be helpful
-        terminal.draw(|f| ui(f, app))?;
+        terminal.draw(|f| render_ui(f, app))?;
         key_handler(app);
     }
     Ok(true)
