@@ -60,6 +60,9 @@ fn key_handler(app: &mut App) {
                 KeyCode::Esc => {
                     app.selected_tab = CurrentTab::Exit;
                 }
+                KeyCode::Tab => {
+                    app.scroll_tab();
+                }
                 KeyCode::Char('w') | KeyCode::Char('W') | KeyCode::Up => {
                     app.next();
                 }
@@ -67,7 +70,7 @@ fn key_handler(app: &mut App) {
                     app.previous();
                 }
                 KeyCode::Enter => {
-                    app.focus_tab();
+                   // app.focus_tab();
                 }
                 _ => {}
             };

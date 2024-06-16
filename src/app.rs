@@ -27,9 +27,9 @@ pub struct App {
     pub selected_tab: CurrentTab,
     pub key_input: String,
     pub currently_editing: Option<CurrentlyEditing>,
-    pub state: ListState,
-    pub items: Vec<String>,
-    pub selected_option: Option<usize>,
+    pub tab_state: ListState,
+    pub tabs: Vec<String>,
+    pub option: usize,
     pub exit: bool,
     pub focused_tab: CurrentTab,
 }
@@ -42,14 +42,14 @@ impl App {
             selected_tab: CurrentTab::Menu,
             key_input: String::new(),
             currently_editing: None,
-            state: ListState::default().with_selected(Some(0)),
-            items: vec![
+            tab_state: ListState::default().with_selected(Some(0)),
+            tabs: vec![
                 String::from("Menu"),
                 String::from("New"),
                 String::from("Edit"),
                 String::from("Options"),
                 String::from("Exit")],
-            selected_option: Some(0),
+            option: 0,
             exit: false,
             focused_tab: CurrentTab::Menu,
             //main_layout: Layout
@@ -57,9 +57,9 @@ impl App {
         }
     }
     pub fn previous(&mut self) {
-        let i = match self.state.selected() {
+        let i = match self.tab_state.selected() {
             Some(i) => {
-                if i >= self.items.len() - 1 {
+                if i >= self.tabs.len() - 1 {
                     0
                 } else {
                     i + 1
@@ -67,25 +67,35 @@ impl App {
             }
             None => 0,
         };
-        self.state.select(Some(i));
+        self.tab_state.select(Some(i));
     }
 
     pub fn next(&mut self) {
-        let i = match self.state.selected() {
+        let i = match self.tab_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.items.len() - 1
+                    self.tabs.len() - 1
                 } else {
                     i - 1
                 }
             }
             None => 0,
         };
-        self.state.select(Some(i));
+        self.tab_state.select(Some(i));
     }
+//Equivalent to the next function, just for scrolling tabs with one key
+    pub fn scroll_tab(&mut self) {
+                if self.option == self.tabs.len() - 1 {
+                    self.option = 0;
+                }
+                 else {
+                    self.option += 1;
+                }
+    self.tab_state.select(Some(self.option));
+            }
     
     pub fn change_menu(&mut self) {
-        match self.state.selected() {
+        match self.tab_state.selected() {
             Some(0) => {
                 self.selected_tab = CurrentTab::Menu;
             }
@@ -113,7 +123,7 @@ impl App {
         self.exit = true;
     }
     pub fn focus_tab(&mut self) {
-        match self.state.selected() {
+        match self.tab_state.selected() {
             Some(0) => {
                 self.focused_tab = CurrentTab::Menu;
             }

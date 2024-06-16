@@ -14,15 +14,22 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(1),
+            Constraint::Length(1),
             Constraint::Min(5),
             Constraint::Length(1),
         ])
         .split(f.size());
-
+    //TAB
+    /*
+    let tab_menu = Block::default().style(Style::default().bg(Color::DarkGray).bold());
+    let tabs = render_title(app).block(tab_menu);
+    f.render_widget(tabs, chunks[0]);
+    */
+     render_tabs(f, app, chunks[0]);
     //TITLE
     let title_block = Block::default().style(Style::default().bg(Color::Black).bold());
     let title = render_title(app).block(title_block);
-    f.render_widget(title, chunks[0]);
+    f.render_widget(title, chunks[1]);
 
     //Dynamic body layout defenition (mutable)
     let body_layout = Layout::default()
@@ -31,13 +38,13 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
             Constraint::Length(25),
             Constraint::Fill(1),
         ])
-        .split(chunks[1]);
+        .split(chunks[2]);
 
     //MAIN MENU
     let field_layout = screen_layout(f, app, &body_layout);
+    //REMOVED FEATURE, NOW IN TABS, todo? implement as something else later? IN PROGRESS
+    //render_menu(app, f, body_layout[0]);
 
-    render_menu(app, f, body_layout[0]);
-    
     //Here, the middle segment of the screen is organized differently depending on the selected tab, text, and widget content is specified later
 /*
     //FOOTER : probably to be REMOVED
@@ -72,7 +79,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
     */
     let key_tips = 
         match app.selected_tab {
-            CurrentTab::Menu => "Navigate Menu ( ↑ ↓ ← →) | Select (Enter)",
+            CurrentTab::Menu => "Navigate Tabs (↹ Tab) | Navigate Menu ( ↑ ↓ ← →) | Select (Enter)",
             CurrentTab::New => "Navigate Blocks (Tab) | Navigate Fields ( ↑ ↓ ← →) | Cancel (Esc) | Confirm New Job (C)",
             CurrentTab::Edit => "Navigate Blocks (Tab) Navigate Fields ( ↑ ↓ ← →) | Cancel (Esc) | Confirm Edit (C)",
             CurrentTab::Options => "Navigate Fields ( ↑ ↓ ← →) | Select Job (Enter) | Cancel (Esc) | Confirm Edit (C)",
@@ -89,7 +96,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
     let footer_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(5), Constraint::Fill(1)])
-        .split(chunks[2]);
+        .split(chunks[3]);
 
     //f.render_widget(tab_footer, footer_chunks[0]);
     f.render_widget(key_tips_footer, footer_chunks[1]);
@@ -102,12 +109,12 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
 //render_footer : renders the footer, with dynamic text and colour as parameters
 //title
 fn render_menu(app: &mut App, f: &mut Frame, area: Rect) {
-    let main_menu = List::new(app.items.clone())
+    let main_menu = List::new(app.tabs.clone())
         .block(Block::bordered().title("Main Menu"))
         .highlight_style(Style::new().add_modifier(Modifier::REVERSED)).add_modifier(Modifier::SLOW_BLINK)
-        .highlight_symbol(">> ")
+        .highlight_symbol("»")
         .repeat_highlight_symbol(true);
-    f.render_stateful_widget(main_menu, area, &mut app.state);
+    f.render_stateful_widget(main_menu, area, &mut app.tab_state);
 }
 
 fn render_footer(text: &str) -> Paragraph {
@@ -352,3 +359,16 @@ fn focus_new(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}
 fn focus_edit(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}
 fn focus_options(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}
 fn focus_exit(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}
+
+fn render_tabs (f: &mut Frame, app: &mut App, area: Rect) {
+    //let titles = SelectedTab::iter().map(SelectedTab::title);
+    let selected_tab_index = &app.selected_tab;
+    let tabs = app.tabs.clone();
+    let tabt= Tabs::new(tabs)
+        .highlight_style(Style::default().yellow())
+        .select(app.option)
+        .padding("", "")
+        .divider(" ");
+
+    f.render_widget(tabt, area);
+}
