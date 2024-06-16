@@ -8,12 +8,13 @@ use crossterm::{
 };
 use ratatui::{prelude::*, widgets::*};
 use std::io::{self, stdout};
+use std::rc::Rc;
 
 mod app;
 mod ui;
 
 use crate::{
-    app::{App, CurrentMenu, CurrentTab},
+    app::{App, CurrentTab},
     ui::*,
 };
 
@@ -46,6 +47,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
         //todo? for self, learn closures more, might be helpful
         terminal.draw(|f| render_ui(f, app))?;
         key_handler(app);
+        app.change_menu()
     }
     Ok(true)
 }
@@ -53,6 +55,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
 fn key_handler(app: &mut App) {
     if let Ok(Event::Key(key)) = event::read() {
         if key.kind == event::KeyEventKind::Press {
+            //General Key Binds
             match key.code {
                 KeyCode::Esc => {
                     app.selected_tab = CurrentTab::Exit;
@@ -64,42 +67,46 @@ fn key_handler(app: &mut App) {
                     app.previous();
                 }
                 KeyCode::Enter => {
-                    app.change_menu();
+                    app.focus_tab();
                 }
                 _ => {}
             };
-            match app.selected_tab {
-                //Main Menu key binds
+            match app.focused_tab {
+                //Menu Key Binds
                 CurrentTab::Menu => match key.code {
-                    KeyCode::Char('q') => {
-                        app.selected_tab = CurrentTab::Options;
-                    }
                     _ => {}
                 },
-                //Options Key Binds
                 CurrentTab::Options => match key.code {
-                    // KeyCode::Char('v') =>
                     _ => {}
                 },
-                //Exit Key Binds
-                CurrentTab::Exit => match key.code {
-                    KeyCode::Char('y') | KeyCode::Char('Y') => {
-                        app.exit();
-                    }
-                    KeyCode::Char('n') | KeyCode::Char('N') => {
-                        app.selected_tab = CurrentTab::Menu;
-                    }
-
-                    _ => {}
-                },
+                
                 CurrentTab::Edit => match key.code {
-                    KeyCode::Char('n') => {}
+                    KeyCode::Tab => {
+                        //app.next_block();
+                    }
+                    KeyCode::Enter => {}
+                    KeyCode::Char('a') | KeyCode::Char('A') | KeyCode::Left  => {}
+                    KeyCode::Char('d') | KeyCode::Char('D') | KeyCode::Right  => {}
+                    KeyCode::Esc  => {}
                     _ => {}
                 },
 
                 CurrentTab::New => match key.code {
                     KeyCode::Char('n') => {}
                     _ => {}
+                },
+
+                //Exit Key Binds
+                CurrentTab::Exit => match key.code {
+
+                    KeyCode::Char('y') | KeyCode::Char('Y') => {
+                        app.exit();
+                    }
+                    KeyCode::Char('n') | KeyCode::Char('N') => {
+                        app.selected_tab = CurrentTab::Menu;
+                    }
+                    _ => {}
+
                 },
             };
         }

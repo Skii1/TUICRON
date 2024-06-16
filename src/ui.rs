@@ -13,57 +13,40 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
-            Constraint::Min(1),
-            Constraint::Length(3),
+            Constraint::Length(1),
+            Constraint::Min(5),
+            Constraint::Length(1),
         ])
         .split(f.size());
 
-    let title_block = Block::default()
-        .borders(Borders::ALL)
-        .style(Style::default().bg(Color::Yellow).bold());
-
+    //TITLE
+    let title_block = Block::default().style(Style::default().bg(Color::Black).bold());
     let title = render_title(app).block(title_block);
-
     f.render_widget(title, chunks[0]);
 
-    let mut body_layout = Layout::default()
+    //Dynamic body layout defenition (mutable)
+    let body_layout = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(1), Constraint::Min(1)])
+        .constraints([
+            Constraint::Length(25),
+            Constraint::Fill(1),
+        ])
         .split(chunks[1]);
 
-    body_layout = screen_layout(f, app, &chunks);
-    //Here, the middle segment of the screen is organized differently depending on the selected tab, text, and widget content is specified later
-
-    //todo? remove/implement into edit/new function
-    let field_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(70), Constraint::Percentage(30)])
-        .split(body_layout[1]);
-
     //MAIN MENU
+    let field_layout = screen_layout(f, app, &body_layout);
+
     render_menu(app, f, body_layout[0]);
-
-    //todo? could use helper function / match
-    let schedule_block = Paragraph::new("Test test").block(Block::bordered().title("Set Schedule"));
-
-    f.render_widget(schedule_block, field_chunks[0]);
-
-    //todo? could use helper function / match
-    let path_block = Paragraph::new("Script Path : /home/pi/scripts/do.sh")
-        .block(Block::bordered().title("Script Path"));
-
-    f.render_widget(path_block, field_chunks[1]);
-
-    //FOOTER
+    
+    //Here, the middle segment of the screen is organized differently depending on the selected tab, text, and widget content is specified later
+/*
+    //FOOTER : probably to be REMOVED
     let current_navigation_text = vec![
         // The first half of the text
         match app.selected_tab {
             CurrentTab::Menu => Span::styled("CRON Edit", Style::default().fg(Color::Green)),
             CurrentTab::New => Span::styled("New CRON Job", Style::default().fg(Color::Green)),
-            CurrentTab::Edit => {
-                Span::styled("Edit Existing CRON Job", Style::default().fg(Color::Green))
-            }
+            CurrentTab::Edit =>  Span::styled("Edit Existing CRON Job", Style::default().fg(Color::Green)),
             CurrentTab::Options => Span::styled("Options", Style::default().fg(Color::Yellow)),
             CurrentTab::Exit => Span::styled("Exiting", Style::default().fg(Color::LightRed)),
         }
@@ -86,58 +69,58 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
             }
         },
     ];
-
-    let tab_footer = Paragraph::new(Line::from(current_navigation_text))
-        .block(Block::default().borders(Borders::ALL));
-
-    let key_instructions = {
+    */
+    let key_tips = 
         match app.selected_tab {
-            CurrentTab::Menu => Span::styled(
-                "Navigate Menu ( ↑ ↓ ← →) | Select (Enter)",
-                Style::default().fg(Color::Cyan),
-            ),
-            CurrentTab::New => Span::styled("Make new etc <N>", Style::default().fg(Color::Yellow)),
-            CurrentTab::Edit => Span::styled("Edit etc <E>", Style::default().fg(Color::Red)),
-            CurrentTab::Options => Span::styled(
-                "Controls <C> | Preferences <P>",
-                Style::default().fg(Color::Red),
-            ),
-            CurrentTab::Exit => Span::styled("Quit", Style::default().fg(Color::Red)),
-        }
-    };
-
+            CurrentTab::Menu => "Navigate Menu ( ↑ ↓ ← →) | Select (Enter)",
+            CurrentTab::New => "Navigate Blocks (Tab) | Navigate Fields ( ↑ ↓ ← →) | Cancel (Esc) | Confirm New Job (C)",
+            CurrentTab::Edit => "Navigate Blocks (Tab) Navigate Fields ( ↑ ↓ ← →) | Cancel (Esc) | Confirm Edit (C)",
+            CurrentTab::Options => "Navigate Fields ( ↑ ↓ ← →) | Select Job (Enter) | Cancel (Esc) | Confirm Edit (C)",
+            CurrentTab::Exit => "Exit y/n",
+        };
+        
     //FOOTER
-    let key_tips_footer =
-        Paragraph::new(Line::from(key_instructions)).block(Block::default().borders(Borders::ALL));
-
+    /*
+    let tab_footer = Paragraph::new(Line::from(current_navigation_text)).block(Block::default().borders(Borders::NONE));
+     */
+    
+    let key_tips_footer = render_footer(key_tips);
+    
     let footer_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(45)])
+        .constraints([Constraint::Percentage(5), Constraint::Fill(1)])
         .split(chunks[2]);
 
-    f.render_widget(tab_footer, footer_chunks[0]);
+    //f.render_widget(tab_footer, footer_chunks[0]);
     f.render_widget(key_tips_footer, footer_chunks[1]);
+
     //EXIT MENU
 }
+
 //Helper Functions
 //render_menu : renders the scrollable main menu. Should remain in the same place
 //render_footer : renders the footer, with dynamic text and colour as parameters
-//titl
+//title
 fn render_menu(app: &mut App, f: &mut Frame, area: Rect) {
     let main_menu = List::new(app.items.clone())
         .block(Block::bordered().title("Main Menu"))
-        .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
+        .highlight_style(Style::new().add_modifier(Modifier::REVERSED)).add_modifier(Modifier::SLOW_BLINK)
         .highlight_symbol(">> ")
         .repeat_highlight_symbol(true);
     f.render_stateful_widget(main_menu, area, &mut app.state);
 }
 
-fn render_footer() {}
-
+fn render_footer(text: &str) -> Paragraph {
+    let footer = Paragraph::new(text)
+        .style(Style::new().white().bg(Color::Rgb(0, 0, 55)))
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true });
+    footer
+}
 fn render_title(app: &mut App) -> Paragraph {
     match app.selected_tab {
         CurrentTab::Menu => {
-            let text = "MENU";
+            let text = "Menu";
             let title = Paragraph::new(text)
                 .block(Block::bordered().title("Paragraph"))
                 .style(Style::new().white().bg(Color::Rgb(204, 0, 0)))
@@ -147,7 +130,7 @@ fn render_title(app: &mut App) -> Paragraph {
         }
 
         CurrentTab::New => {
-            let text = "NEW";
+            let text = "New Cron Task";
             let title = Paragraph::new(text)
                 .block(Block::bordered().title("Paragraph"))
                 .style(Style::new().white().bg(Color::Rgb(204, 0, 0)))
@@ -157,7 +140,7 @@ fn render_title(app: &mut App) -> Paragraph {
         }
 
         CurrentTab::Edit => {
-            let text = "EDIT";
+            let text = "Edit Cron Tasks";
             let title = Paragraph::new(text)
                 .block(Block::bordered().title("Paragraph"))
                 .style(Style::new().white().on_black())
@@ -167,7 +150,7 @@ fn render_title(app: &mut App) -> Paragraph {
         }
 
         CurrentTab::Options => {
-            let text = "OPTIONS";
+            let text = "Options";
             let title = Paragraph::new(text)
                 .block(Block::bordered().title("Paragraph"))
                 .style(Style::new().white().on_black())
@@ -177,7 +160,7 @@ fn render_title(app: &mut App) -> Paragraph {
         }
 
         CurrentTab::Exit => {
-            let text = "EXITING";
+            let text = "Exiting...";
             let title = Paragraph::new(text)
                 .block(Block::bordered().title("Paragraph"))
                 .style(Style::new().white().on_black())
@@ -215,7 +198,10 @@ fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) -> Rc<
         CurrentTab::Menu => {
             let mut mod_layout = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(30), Constraint::Percentage(70)])
+                .constraints([
+                    Constraint::Length(25),
+                    Constraint::Percentage(80),
+                ])
                 .split(split_target[1]);
             mod_layout
         }
@@ -223,9 +209,8 @@ fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) -> Rc<
             let mut mod_layout = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([
-                    Constraint::Min(4),
-                    Constraint::Percentage(60),
-                    Constraint::Min(1),
+                    Constraint::Length(25),
+                    Constraint::Percentage(80),
                 ])
                 .split(split_target[1]);
             mod_layout
@@ -234,15 +219,15 @@ fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) -> Rc<
             let mut mod_layout = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([
-                    Constraint::Min(4),
-                    Constraint::Percentage(60),
-                    Constraint::Min(1),
+                    Constraint::Length(25),
+                    Constraint::Percentage(80),
                 ])
                 .split(split_target[1]);
             mod_layout
         }
         CurrentTab::Options => {
             let mut mod_layout = Layout::default()
+                .direction(Direction::Horizontal)
                 .constraints([
                     Constraint::Min(4),
                     Constraint::Percentage(50),
@@ -254,12 +239,9 @@ fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) -> Rc<
 
         CurrentTab::Exit => {
             let mut mod_layout = Layout::default()
-                .constraints([
-                    Constraint::Percentage(50),
-                    Constraint::Percentage(50),
-                ])
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
                 .split(split_target[1]);
-                exit_menu(f, app);
             mod_layout
         }
     }
@@ -271,11 +253,11 @@ fn exit_menu(f: &mut Frame, app: &mut App) {
         .title("Y/N")
         .borders(Borders::TOP)
         .title("Exit?")
-        .style(Style::default().bg(Color::Rgb(7, 3, 252)));
+        .style(Style::default().bg(Color::Rgb(7, 3, 252)).bold().italic());
 
     let exit_text = Text::styled(
         "Would you like exit the app? (Y/N)",
-        Style::default().fg(Color::White),
+        Style::default().fg(Color::White).bold(),
     );
     // the `trim: false` will stop the text from being cut off when over the edge of the block
     let exit_paragraph = Paragraph::new(exit_text)
@@ -285,3 +267,49 @@ fn exit_menu(f: &mut Frame, app: &mut App) {
     let area = centered_rect(60, 25, f.size());
     f.render_widget(exit_paragraph, area);
 }
+
+fn new_exit_menu(app: &mut App) {
+
+}
+
+fn new_menu(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {
+    let schedule_block = Paragraph::new("NEW CRON")
+        .block(Block::bordered().title("Set Schedule"));
+    f.render_widget(schedule_block, layout[0]);
+
+    let path_block = Paragraph::new("NEW Script Path : /home/pi/scripts/do.sh")
+        .block(Block::bordered().title("Script Path"));
+    f.render_widget(path_block, layout[1]);
+}
+
+fn edit_menu(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {
+    let schedule_block = Paragraph::new("EDIT CRON")
+        .block(Block::bordered().title("Modify Schedule"));
+    f.render_widget(schedule_block, layout[0]);
+
+    let path_block = Paragraph::new("EDIT Script Path : /home/pi/scripts/do.sh")
+        .block(Block::bordered().title("Script Path"));
+    f.render_widget(path_block, layout[1]);
+}
+
+fn focus_tab (app: &mut App, f: &mut Frame, layout: Rc<[Rect]>) {
+    match app.focused_tab {
+        CurrentTab::Menu => focus_menu(f, app, layout),
+        CurrentTab::New => {}
+        CurrentTab::Edit => {}
+        CurrentTab::Options => {}
+        CurrentTab::Exit => {}
+    }
+}
+
+fn focus_menu(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {
+    let context = Paragraph::new("Main menu context")
+        .block(Block::bordered().title("context"));
+    let other = Paragraph::new("we are locked in!")
+        .block(Block::bordered().title("Other"));
+    f.render_widget(context, layout[0])
+}
+fn focus_new(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}
+fn focus_edit(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}
+fn focus_options(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}
+fn focus_exit(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}

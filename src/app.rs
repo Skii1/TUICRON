@@ -1,4 +1,5 @@
 use std::io;
+use std::clone::Clone;
 use ratatui::{prelude::*, widgets::*};
 
 //GUIDE CODE
@@ -10,10 +11,10 @@ pub enum CurrentTab {
     Exit,
 }
 //replace with tabs
-pub enum CurrentMenu {
-    Main,
+pub enum FocusedTab {
+    Menu,
+    New,
     Edit,
-    View,
     Options,
     Exit,
 }
@@ -30,7 +31,7 @@ pub struct App {
     pub items: Vec<String>,
     pub selected_option: Option<usize>,
     pub exit: bool,
-    //pub body_layout: Rect,
+    pub focused_tab: CurrentTab,
 }
 
 //App method, pass to main
@@ -50,6 +51,7 @@ impl App {
                 String::from("Exit")],
             selected_option: Some(0),
             exit: false,
+            focused_tab: CurrentTab::Menu,
             //main_layout: Layout
             //body_layout: Layout::default().direction(Direction::Vertical).constraints([Constraint::Percentage(100)]).split(chunks[1])
         }
@@ -110,4 +112,30 @@ impl App {
     pub fn exit(&mut self){
         self.exit = true;
     }
+    pub fn focus_tab(&mut self) {
+        match self.state.selected() {
+            Some(0) => {
+                self.focused_tab = CurrentTab::Menu;
+            }
+            Some(1) => {
+                self.focused_tab = CurrentTab::New;
+            }
+            Some(2) => {
+                self.focused_tab = CurrentTab::Edit;
+            }
+            Some(3) => {
+                self.focused_tab = CurrentTab::Options;
+            }
+            Some(4) => {
+                self.focused_tab = CurrentTab::Exit;
+            }
+            None => {
+                self.focused_tab = CurrentTab::Menu;
+            }
+            _ => {
+                self.focused_tab = CurrentTab::Menu;
+            }
+        };
+    }
 }
+
