@@ -12,6 +12,7 @@ use std::rc::Rc;
 
 mod app;
 mod ui;
+mod cron;
 
 use crate::{
     app::{App, CurrentTab},

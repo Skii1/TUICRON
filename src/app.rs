@@ -10,14 +10,6 @@ pub enum CurrentTab {
     Options,
     Exit,
 }
-//replace with tabs
-pub enum FocusedTab {
-    Menu,
-    New,
-    Edit,
-    Options,
-    Exit,
-}
 //GUIDE CODE
 pub enum CurrentlyEditing {
     Time,

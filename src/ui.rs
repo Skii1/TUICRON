@@ -13,10 +13,10 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(1),
-            Constraint::Length(1),
-            Constraint::Min(5),
-            Constraint::Length(1),
+            Constraint::Length(1), //Tab Toolbar
+            Constraint::Length(3), //TEMPORARY ?todo REMOVE
+            Constraint::Min(5), //Main Body, main block as Tab title and contents
+            Constraint::Length(1), //Footer, key bind tips
         ])
         .split(f.size());
 
@@ -24,8 +24,8 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
     render_toolbar(f, app, chunks[0]);
 
     //TITLE
-    render_title(f, app, chunks[1]);
-
+    render_tab_frame(f, app, chunks[1]);
+    
     //Dynamic body layout defenition (mutable) (now just splits the middle main chunk entirely
     let field_layout = screen_layout(f, app, chunks[2]);
 
@@ -57,6 +57,28 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
 }
 
 //Helper Functions
+//Menu Styling won't work??? Why???
+
+///new_tab_frame In development function to make outer box for the entire tab frame, use render title for now, called tab render 
+fn new_tab_frame(f: &mut Frame, app: &mut App, area: Rect) {
+    
+        let menu_style = Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow).bg(Color::Rgb(0,0,55));
+        let mut menu_text = ratatui::prelude::Line::styled("DEFAULT", menu_style);
+
+        match app.selected_tab {
+            CurrentTab::Menu => menu_text = ratatui::prelude::Line::styled("Menu", menu_style),
+            CurrentTab::New => menu_text = ratatui::prelude::Line::styled("NEW | Cron Task", menu_style),
+            CurrentTab::Edit => menu_text = ratatui::prelude::Line::styled("EDIT | Cron Task", menu_style),
+            CurrentTab::Options => menu_text = ratatui::prelude::Line::styled("Options", menu_style),
+            CurrentTab::Exit => menu_text = ratatui::prelude::Line::styled("Exit", menu_style),
+            _ => {}
+        };
+        let menu_block = Block::bordered().title(menu_text);
+        let tab_block = Block::bordered().title("Inner");
+        let inner = menu_block.inner(area);
+        f.render_widget(menu_block, area);
+        f.render_widget(tab_block, inner);
+}
 fn render_menu(app: &mut App, f: &mut Frame, area: Rect) {
     let main_menu = List::new(app.tabs.clone())
         .block(Block::bordered().title("Main Menu"))
@@ -65,19 +87,17 @@ fn render_menu(app: &mut App, f: &mut Frame, area: Rect) {
         .highlight_symbol("»")
         .repeat_highlight_symbol(true);
     f.render_stateful_widget(main_menu, area, &mut app.tab_state);
-}
-
+} 
 fn render_toolbar(f: &mut Frame, app: &mut App, area: Rect) {
     let tabs = app.tabs.clone();
     let tab_bar = Tabs::new(tabs)
         .highlight_style(Style::default().yellow().bg(Color::Black))
         .select(app.option)
-        .padding("", "")
+        .padding(" ", " ")
         .divider(" | ");
 
     f.render_widget(tab_bar, area);
 }
-
 fn render_footer(f: &mut Frame, app: &mut App, area: Rect) {
     let key_tips =
         match app.selected_tab {
@@ -93,55 +113,27 @@ fn render_footer(f: &mut Frame, app: &mut App, area: Rect) {
         .wrap(Wrap { trim: true });
     f.render_widget(footer, area)
 }
-fn render_title(f: &mut Frame, app: &mut App, area: Rect) {
+fn render_tab_frame(f: &mut Frame, app: &mut App, area: Rect) {
+
+    let menu_style = Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow).bg(Color::Rgb(0,0,55));
+    let mut menu_text = Text::raw("DEFAULT");
+    
+
     match app.selected_tab {
-        CurrentTab::Menu => {
-            let text = "Menu";
-            let title = Paragraph::new(text)
-                .style(Style::new().white().bg(Color::Rgb(204, 0, 0)))
-                .alignment(Alignment::Center)
-                .wrap(Wrap { trim: true });
-            f.render_widget(title, area);
-        }
-
-        CurrentTab::New => {
-            let text = "New Cron Task";
-            let title = Paragraph::new(text)
-                .style(Style::new().white().bg(Color::Rgb(204, 0, 0)))
-                .alignment(Alignment::Center)
-                .wrap(Wrap { trim: true });
-            f.render_widget(title, area);
-        }
-
-        CurrentTab::Edit => {
-            let text = "Edit Cron Tasks";
-            let title = Paragraph::new(text)
-                .style(Style::new().white().on_black())
-                .alignment(Alignment::Center)
-                .wrap(Wrap { trim: false });
-            f.render_widget(title, area);
-        }
-
-        CurrentTab::Options => {
-            let text = "Options";
-            let title = Paragraph::new(text)
-                .block(Block::bordered().title("Paragraph")) //keeping this broken block for potential reimplementation later
-                .style(Style::new().white().on_black())
-                .alignment(Alignment::Center)
-                .wrap(Wrap { trim: true });
-            f.render_widget(title, area);
-        }
-
-        CurrentTab::Exit => {
-            let text = "Exiting...";
-            let title = Paragraph::new(text)
-                .block(Block::bordered().title("Paragraph"))
-                .style(Style::new().white().on_black())
-                .alignment(Alignment::Center)
-                .wrap(Wrap { trim: true });
-            f.render_widget(title, area);
-        }
-    }
+        CurrentTab::Menu => menu_text = Text::raw("Menu"),
+        CurrentTab::New => menu_text = Text::raw("NEW | Cron Task"),
+        CurrentTab::Edit => menu_text = Text::raw("EDIT | Cron Task"),
+        CurrentTab::Options => menu_text = Text::raw("Options"),
+        CurrentTab::Exit => menu_text = Text::raw("Exit"),
+        _ => { }
+    };
+    
+    let menu_block = Paragraph::new(menu_text)
+        .style(menu_style)
+        .alignment(Alignment::Center)
+        .block(Block::bordered());
+    
+    f.render_widget(menu_block, area);
 }
 
 fn screen_layout(f: &mut Frame, app: &mut App, split_target: Rect) {
@@ -168,7 +160,7 @@ fn screen_layout(f: &mut Frame, app: &mut App, split_target: Rect) {
             let context = Paragraph::new("Edit the tab").block(Block::bordered().title("Edit tab"));
             let other = Paragraph::new("we are locked in!").block(Block::bordered().title("Time"));
             f.render_widget(context, mod_layout[0]);
-            f.render_widget(other, mod_layout[1]);
+            
         }
         CurrentTab::New => {
             let mut mod_layout = Layout::default()
@@ -275,8 +267,7 @@ fn new_tab(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {
 }
 
 fn edit_tab(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {
-    let schedule_block =
-        Paragraph::new("EDIT CRON").block(Block::bordered().title("Modify Schedule"));
+    let schedule_block = Paragraph::new("EDIT CRON").block(Block::bordered().title("Modify Schedule"));
     f.render_widget(schedule_block, layout[0]);
 
     let path_block = Paragraph::new("EDIT Script Path : /home/pi/scripts/do.sh")
@@ -310,4 +301,16 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
             Constraint::Percentage((100 - percent_x) / 2),
         ])
         .split(popup_layout[1])[1] // Return the middle chunk
+}
+
+//parameters TBD. Since a state will be held, should it reference just app? or cron?
+fn cron_maker(f: &mut Frame, app: &mut App, area: Rect) {
+    let body = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Min(3),
+            Constraint::Min(10),
+            Constraint::Min(5),
+        ])
+        .split(area);
 }
