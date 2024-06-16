@@ -193,7 +193,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1] // Return the middle chunk
 }
 
-fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) -> Rc<[Rect]> {
+fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) {
     match app.selected_tab {
         CurrentTab::Menu => {
             let mut mod_layout = Layout::default()
@@ -203,17 +203,29 @@ fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) -> Rc<
                     Constraint::Percentage(80),
                 ])
                 .split(split_target[1]);
-            mod_layout
+
+            let context = Paragraph::new("Main menu context")
+                .block(Block::bordered().title("Main Menu"));
+            let other = Paragraph::new("we are locked in!")
+                .block(Block::bordered().title("context"));
+            f.render_widget(context, mod_layout[0]);
+            f.render_widget(other, mod_layout[1]);
         }
         CurrentTab::Edit => {
             let mut mod_layout = Layout::default()
-                .direction(Direction::Horizontal)
+                .direction(Direction::Vertical)
                 .constraints([
                     Constraint::Length(25),
                     Constraint::Percentage(80),
                 ])
                 .split(split_target[1]);
-            mod_layout
+
+            let context = Paragraph::new("Edit the tab")
+                .block(Block::bordered().title("Edit tab"));
+            let other = Paragraph::new("we are locked in!")
+                .block(Block::bordered().title("Time"));
+            f.render_widget(context, mod_layout[0]);
+            f.render_widget(other, mod_layout[1]);
         }
         CurrentTab::New => {
             let mut mod_layout = Layout::default()
@@ -223,7 +235,13 @@ fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) -> Rc<
                     Constraint::Percentage(80),
                 ])
                 .split(split_target[1]);
-            mod_layout
+
+            let context = Paragraph::new("Main menu context")
+                .block(Block::bordered().title("context"));
+            let other = Paragraph::new("we are locked in!")
+                .block(Block::bordered().title("Other"));
+            f.render_widget(context, mod_layout[0]);
+            f.render_widget(other, mod_layout[1]);
         }
         CurrentTab::Options => {
             let mut mod_layout = Layout::default()
@@ -234,7 +252,21 @@ fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) -> Rc<
                     Constraint::Min(4),
                 ])
                 .split(split_target[1]);
-            mod_layout
+            
+            let items = ["Item 1", "Item 2", "Item 3"];
+            let options = List::new(items)
+                .block(Block::bordered().title("Options List"))
+                .style(Style::default().fg(Color::White))
+                .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+                .highlight_symbol(">>")
+                .repeat_highlight_symbol(true)
+                .direction(ListDirection::TopToBottom);
+            let mut option_state = ListState::default();
+            option_state.select(Some(0));
+            let context = Paragraph::new("Here's a quick description of what this item does")
+                .block(Block::bordered().title("Context"));
+            f.render_stateful_widget(options, mod_layout[0], &mut option_state);
+            f.render_widget(context, mod_layout[1]);
         }
 
         CurrentTab::Exit => {
@@ -242,7 +274,13 @@ fn screen_layout(f: &mut Frame, app: &mut App, split_target: &Rc<[Rect]>) -> Rc<
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
                 .split(split_target[1]);
-            mod_layout
+
+            let context = Paragraph::new("Main menu context")
+                .block(Block::bordered().title("context"));
+            let other = Paragraph::new("we are locked in!")
+                .block(Block::bordered().title("Other"));
+            f.render_widget(context, mod_layout[0]);
+            f.render_widget(other, mod_layout[1]);
         }
     }
 }
@@ -307,7 +345,8 @@ fn focus_menu(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {
         .block(Block::bordered().title("context"));
     let other = Paragraph::new("we are locked in!")
         .block(Block::bordered().title("Other"));
-    f.render_widget(context, layout[0])
+    f.render_widget(context, layout[0]);
+    f.render_widget(other, layout[1]);
 }
 fn focus_new(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}
 fn focus_edit(f: &mut Frame, app: &mut App, layout: Rc<[Rect]>) {}

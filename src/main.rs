@@ -47,7 +47,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
         //todo? for self, learn closures more, might be helpful
         terminal.draw(|f| render_ui(f, app))?;
         key_handler(app);
-        app.change_menu()
+        app.change_menu();
     }
     Ok(true)
 }
