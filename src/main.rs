@@ -18,6 +18,7 @@ use crate::{
     app::{App, CurrentTab},
     ui::*,
 };
+use crate::app::InputState;
 
 //boilerplate
 fn main() -> Result<(), Box<dyn Error>> {
@@ -64,18 +65,12 @@ fn key_handler(app: &mut App) {
                 KeyCode::Tab => {
                     app.scroll_tab();
                 }
-                KeyCode::Char('w') | KeyCode::Char('W') | KeyCode::Up => {
-                    app.next();
-                }
-                KeyCode::Char('s') | KeyCode::Char('S') | KeyCode::Down => {
-                    app.previous();
-                }
                 KeyCode::Enter => {
                    // app.focus_tab();
                 }
                 _ => {}
             };
-            match app.focused_tab {
+            match app.selected_tab {
                 //Menu Key Binds
                 CurrentTab::Menu => match key.code {
                     _ => {}
@@ -85,20 +80,80 @@ fn key_handler(app: &mut App) {
                 },
                 
                 CurrentTab::Edit => match key.code {
-                    KeyCode::Tab => {
-                        //app.next_block();
-                    }
+                    KeyCode::Esc  => {}
                     KeyCode::Enter => {}
                     KeyCode::Char('a') | KeyCode::Char('A') | KeyCode::Left  => {}
                     KeyCode::Char('d') | KeyCode::Char('D') | KeyCode::Right  => {}
-                    KeyCode::Esc  => {}
                     _ => {}
                 },
 
-                CurrentTab::New => match key.code {
-                    KeyCode::Char('n') => {}
-                    _ => {}
-                },
+                CurrentTab::New => match app.input_mode {
+                    InputState::Idle =>
+                        match key.code {
+                            KeyCode::Char('n') => {
+                                app.input_mode = InputState::Time;
+                            }
+
+                            KeyCode::Esc => {
+                                app.input_mode = InputState::Idle;
+                            }
+                            _ => {}
+                        },
+
+                    InputState::Time =>
+                        match key.code {
+                            KeyCode::Enter => {
+                                app.submit_message();
+                                app.input_mode = InputState::Script;
+                            },
+
+                            KeyCode::Esc => app.input_mode = InputState::Idle,
+
+                            KeyCode::Backspace => app.delete_char(),
+
+                            KeyCode::Char('c') => {} //save whole cron task
+
+                            KeyCode::Char('a') | KeyCode::Char('A') | KeyCode::Left => app.next_input(),
+
+                            KeyCode::Char('d') | KeyCode::Char('D') | KeyCode::Right => app.previous_input(),
+
+                            _ => {}
+                        },
+
+                    InputState::Script =>
+                        match key.code {
+                            KeyCode::Enter => {
+                                app.submit_message();
+                                app.input_mode = InputState::Confirm;
+                            }
+
+                            KeyCode::Char('c') => {} //save whole cron task
+
+                            KeyCode::Char('a') | KeyCode::Char('A') | KeyCode::Left => app.next_input(),
+
+                            KeyCode::Char('d') | KeyCode::Char('D') | KeyCode::Right => app.previous_input(),
+
+                            _ => {}
+                        },
+
+                    InputState::Confirm =>
+                        match key.code {
+                            KeyCode::Esc => app.input_mode = InputState::Idle,
+
+                            KeyCode::Enter => {
+                                app.submit_message();
+                                app.input_mode = InputState::Idle
+                            }
+
+                            KeyCode::Char('c') => {} //save whole cron task
+
+                            KeyCode::Char('a') | KeyCode::Char('A') | KeyCode::Left => app.next_input(),
+
+                            KeyCode::Char('d') | KeyCode::Char('D') | KeyCode::Right => app.previous_input(),
+
+                            _ => {}
+                        },
+                }
 
                 //Exit Key Binds
                 CurrentTab::Exit => match key.code {
