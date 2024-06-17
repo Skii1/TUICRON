@@ -20,6 +20,7 @@ pub enum InputState {
     Idle,
     Time,
     Script,
+    Weekday,
     Confirm,
 }
 pub struct App {
@@ -30,7 +31,11 @@ pub struct App {
     pub option: usize,
     pub exit: bool,
     pub focused_tab: CurrentTab,
+    pub input_buffer: String,
     pub time_input: String,
+    pub script_input: String,
+    pub weekday_input: String,
+    pub num_buffer: usize,
     pub character_index: usize,
     pub input_mode: InputState,
     pub messages: Vec<String>,
@@ -50,7 +55,11 @@ impl App {
         //initialize values part of App struct
         App {
             selected_tab: CurrentTab::Menu,
+            input_buffer: String::new(),
+            num_buffer: 0,
             time_input: String::new(),
+            script_input: String::new(),
+            weekday_input: String::new(),
             character_index: 0,
             input_mode: InputState::Idle,
             messages: Vec::new(), 
@@ -99,6 +108,17 @@ impl App {
             None => 0,
         };
         self.tab_state.select(Some(i));
+    }
+
+    pub fn inc_buffer(&mut self, max: usize)  {
+        let mut i = self.num_buffer;
+                if i == max - 1 {
+                    i = 0;
+                }
+                else {
+                    i += 1;
+                }
+        self.num_buffer = i;
     }
 
     pub fn previous_input(&mut self) {
@@ -190,7 +210,7 @@ impl App {
 
    pub fn enter_char(&mut self, new_char: char) {
         let index = self.byte_index();
-        self.time_input.insert(index, new_char);
+        self.input_buffer.insert(index, new_char);
         self.move_cursor_right();
     }
 
@@ -199,11 +219,11 @@ impl App {
     /// Since each character in a string can be contain multiple bytes, it's necessary to calculate
     /// the byte index based on the index of the character.
     pub fn byte_index(&mut self) -> usize {
-        self.time_input
+        self.input_buffer
             .char_indices()
             .map(|(i, _)| i)
             .nth(self.character_index)
-            .unwrap_or(self.time_input.len())
+            .unwrap_or(self.input_buffer.len())
     }
 
     pub fn delete_char(&mut self) {
@@ -217,28 +237,51 @@ impl App {
             let from_left_to_current_index = current_index - 1;
 
             // Getting all characters before the selected character.
-            let before_char_to_delete = self.time_input.chars().take(from_left_to_current_index);
+            let before_char_to_delete = self.input_buffer.chars().take(from_left_to_current_index);
             // Getting all characters after selected character.
-            let after_char_to_delete = self.time_input.chars().skip(current_index);
+            let after_char_to_delete = self.input_buffer.chars().skip(current_index);
 
             // Put all characters together except the selected one.
             // By leaving the selected one out, it is forgotten and therefore deleted.
-            self.time_input = before_char_to_delete.chain(after_char_to_delete).collect();
+            self.input_buffer = before_char_to_delete.chain(after_char_to_delete).collect();
             self.move_cursor_left();
         }
     }
 
     pub fn clamp_cursor(&self, new_cursor_pos: usize) -> usize {
-        new_cursor_pos.clamp(0, self.time_input.chars().count())
+        new_cursor_pos.clamp(0, self.input_buffer.chars().count())
     }
 
     pub fn reset_cursor(&mut self) {
         self.character_index = 0;
     }
 
-    pub fn submit_message(&mut self) {
+    pub fn push_time(&mut self) {
         self.messages.push(self.time_input.clone());
-        self.time_input.clear();
+        self.input_buffer.clear();
         self.reset_cursor();
     }
+
+    pub fn push_command(&mut self) {
+        self.messages.push(self.time_input.clone());
+        self.input_buffer.clear();
+        self.reset_cursor();
+    }
+
+    pub fn push_weekday(&mut self) {
+       // cron.messages.push(self.input_buffer.clone());
+        self.input_buffer.clear();
+        self.reset_cursor();
+    }
+
+    pub fn submit_message(&mut self) {
+       // cron.messages.push(self.time_input.clone());
+        self.input_buffer.clear();
+        self.reset_cursor();
+    }
+    pub fn num_buff_to_str() {
+
+
+    }
+
 }

@@ -19,6 +19,7 @@ use crate::{
     ui::*,
 };
 use crate::app::InputState;
+use crate::cron::CronTask;
 
 //boilerplate
 fn main() -> Result<(), Box<dyn Error>> {
@@ -29,7 +30,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let backend = CrosstermBackend::new(stdout());
     let mut terminal = Terminal::new(backend)?;
     let mut app = App::new();
-    let res = run_app(&mut terminal, &mut app);
+    let mut cron = CronTask::new();
+    let res = run_app(&mut terminal, &mut app, &mut cron);
 
     //Terminal Cleanup
     disable_raw_mode()?;
@@ -43,18 +45,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<bool> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App, cron: &mut CronTask) -> io::Result<bool> {
     //Main APP loop
     while !app.exit {
         //todo? for self, learn closures more, might be helpful
         terminal.draw(|f| render_ui(f, app))?;
-        key_handler(app);
+        key_handler(app, cron);
         app.change_menu();
     }
     Ok(true)
 }
 //todo? Add selection of the new item, change the screen state depending on the selected type. Make new menus.
-fn key_handler(app: &mut App) {
+fn key_handler(app: &mut App, cron: &mut CronTask) {
     if let Ok(Event::Key(key)) = event::read() {
         if key.kind == event::KeyEventKind::Press {
             //General Key Binds
@@ -64,9 +66,6 @@ fn key_handler(app: &mut App) {
                 }
                 KeyCode::Tab => {
                     app.scroll_tab();
-                }
-                KeyCode::Enter => {
-                   // app.focus_tab();
                 }
                 _ => {}
             };
@@ -80,10 +79,9 @@ fn key_handler(app: &mut App) {
                 },
                 
                 CurrentTab::Edit => match key.code {
-                    KeyCode::Esc  => {}
                     KeyCode::Enter => {}
-                    KeyCode::Char('a') | KeyCode::Char('A') | KeyCode::Left  => {}
-                    KeyCode::Char('d') | KeyCode::Char('D') | KeyCode::Right  => {}
+                    KeyCode::Char('w') | KeyCode::Char('W') | KeyCode::Up  => {}
+                    KeyCode::Char('s') | KeyCode::Char('S') | KeyCode::Down  => {}
                     _ => {}
                 },
 
@@ -93,10 +91,7 @@ fn key_handler(app: &mut App) {
                             KeyCode::Char('n') => {
                                 app.input_mode = InputState::Time;
                             }
-
-                            KeyCode::Esc => {
-                                app.input_mode = InputState::Idle;
-                            }
+                            KeyCode::Esc => {}
                             _ => {}
                         },
 
@@ -105,14 +100,35 @@ fn key_handler(app: &mut App) {
                             KeyCode::Enter => {
                                 app.submit_message();
                                 app.input_mode = InputState::Script;
+                            }
+
+                            KeyCode::Esc => app.input_mode = InputState::Idle,
+
+                            KeyCode::Backspace => app.delete_char(),
+                            
+                            KeyCode::Char(to_insert) => app.enter_char(to_insert),
+
+                            KeyCode::Up => {
+                                let max:usize = 30;
+                                app.inc_buffer(max);
+                            },
+
+                            //KeyCode::Down=> app.dec_buffer(),
+
+                            _ => {}
+                        },
+
+                    InputState::Script =>
+                        match key.code {
+                            KeyCode::Enter => {
+                                app.submit_message();
+                                app.input_mode = InputState::Weekday;
                             },
 
                             KeyCode::Esc => app.input_mode = InputState::Idle,
 
                             KeyCode::Backspace => app.delete_char(),
 
-                            KeyCode::Char('c') => {} //save whole cron task
-                            
                             KeyCode::Char(to_insert) => app.enter_char(to_insert),
 
                             KeyCode::Up => app.next_input(),
@@ -122,18 +138,22 @@ fn key_handler(app: &mut App) {
                             _ => {}
                         },
 
-                    InputState::Script =>
+                    InputState::Weekday =>
                         match key.code {
                             KeyCode::Enter => {
                                 app.submit_message();
                                 app.input_mode = InputState::Confirm;
-                            }
+                            },
 
-                            KeyCode::Char('c') => {} //save whole cron task
+                            KeyCode::Esc => app.input_mode = InputState::Idle,
 
-                            KeyCode::Char('a') | KeyCode::Char('A') | KeyCode::Left => app.next_input(),
+                            KeyCode::Backspace => app.delete_char(),
 
-                            KeyCode::Char('d') | KeyCode::Char('D') | KeyCode::Right => app.previous_input(),
+                            KeyCode::Char(to_insert) => app.enter_char(to_insert),
+
+                            KeyCode::Up => app.next_input(),
+
+                            KeyCode::Down=> app.previous_input(),
 
                             _ => {}
                         },
@@ -144,14 +164,12 @@ fn key_handler(app: &mut App) {
 
                             KeyCode::Enter => {
                                 app.submit_message();
-                                app.input_mode = InputState::Idle
+                                app.input_mode = InputState::Time;
                             }
 
-                            KeyCode::Char('c') => {} //save whole cron task
+                            KeyCode::Up => app.next_input(),
 
-                            KeyCode::Char('a') | KeyCode::Char('A') | KeyCode::Left => app.next_input(),
-
-                            KeyCode::Char('d') | KeyCode::Char('D') | KeyCode::Right => app.previous_input(),
+                            KeyCode::Down => app.previous_input(),
 
                             _ => {}
                         },

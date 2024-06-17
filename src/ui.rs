@@ -72,10 +72,10 @@ fn render_menu(app: &mut App, f: &mut Frame, area: Rect) {
 fn render_toolbar(f: &mut Frame, app: &mut App, area: Rect) {
     let tabs = app.tabs.clone();
     let tab_bar = Tabs::new(tabs)
-        .highlight_style(Style::default().yellow().bg(Color::Black))
+        .highlight_style(Style::default().yellow().bg(Color::Rgb(50, 50, 50)))
         .select(app.option)
         .padding(" ", " ")
-        .divider(" | ");
+        .divider(" ");
 
     f.render_widget(tab_bar, area);
 }
@@ -89,7 +89,7 @@ fn render_footer(f: &mut Frame, app: &mut App, area: Rect) {
             CurrentTab::Exit => "Navigate Tabs (↹ Tab) | Exit (Y) |",
         };
     let footer = Paragraph::new(key_tips)
-        .style(Style::new().white().bg(Color::Rgb(0, 0, 55)))
+        .style(Style::new().white().bg(Color::Rgb(0, 0, 155)))
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true });
     f.render_widget(footer, area)
@@ -122,7 +122,7 @@ fn menu_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     f.render_widget(context, window[0]);
     f.render_widget(other, window[1]);
 }
-fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
+fn new_tab(f: &mut Frame, app: &mut App, tab: Rect,) {
     let window = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Min(15), Constraint::Percentage(85)])
@@ -139,55 +139,62 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
             ])
         .split(window[1]);
 
-    let context = Paragraph::new("Find tooltips and context for selected elements in this block")
+    let context = Paragraph::new("Press 'n' to make a new new cron task. Yellow highlighting indicates the selected item you are editing. Edit the values in the example format, shown while unselected")
         .block(Block::bordered().title("Context"))
         .wrap(Wrap { trim: true });
     f.render_widget(context, window[0]);
 
     //content of cronmaker
-    let sometitle = Paragraph::new("TITLE")
+    let input_style = Style::default().fg(Color::Yellow);
+    let title_block = Paragraph::new("TITLE")
         .block(Block::bordered().title("TITLE"))
         .wrap(Wrap { trim: true });
-    let time_input = Paragraph::new(app.time_input.as_str())
-        .style(match app.input_mode {
-            InputState::Time => Style::default().fg(Color::Yellow),
-            _ => {Style::default()},
-        })
+    let mut time_block = Paragraph::new("Enter time, mm:hr")
         .block(Block::bordered().title("Time"));
-    let weekdays = Paragraph::new("Weekdays")
-        .block(Block::bordered().title("WEEK"))
+    let mut command_block = Paragraph::new("Enter your command or script to be run here.")
+        .block(Block::bordered().title("Command"))
         .wrap(Wrap { trim: true });
-    let dayofmonth = Paragraph::new("calendar day of month")
-        .block(Block::bordered().title("DOM"))
+    let mut weekday_block = Paragraph::new("Enter a value, in a range, a-b, where a and b are day values, 0 indexed from Sunday. (e.g : 1-5 is running Monday to Friday")
+        .block(Block::bordered().title("Weekday(s)"))
         .wrap(Wrap { trim: true });
-    let preview = Paragraph::new("other idk")
-        .block(Block::bordered().title("Context"))
+    let mut preview = Paragraph::new("See a preview of you task here.")
+        .block(Block::bordered().title("Preview Task"))
         .wrap(Wrap { trim: true });
 
-    f.set_cursor(
-        // Draw the cursor at the current position in the input field.
-        // This position is can be controlled via the left and right arrow key
-        fields[1].x + app.character_index as u16 + 1,
-        // Move one line down, from the border to the input line
-        fields[1].y + 1,
-    );
-
+    match app.input_mode {
+        InputState::Idle => {}
+        InputState::Time => {
+            set_cursor(app, f, fields[1]);
+            let time_input = Paragraph::new(app.num_buffer)
+                .style(Style::default().fg(Color::Yellow))
+                .block(Block::bordered().title("Edit Time"));
+            time_block = time_input;
+        }
+        InputState::Script => {
+            set_cursor(app, f, fields[2]);
+            let command_input = Paragraph::new(app.input_buffer.as_str())
+                .style(Style::default().fg(Color::Yellow))
+                .block(Block::bordered().title("Edit Command"));
+            command_block = command_input;
+        }
+        InputState::Confirm => {}
+        _ => {}
+    };
     let messages: Vec<ListItem> = app
         .messages
         .iter()
         .enumerate()
         .map(|(i, m)| {
-            let content = Line::from(Span::raw(format!("{i}: {m}")));
+            let content = Line::from(Span::raw(format!("{i} Time : {m}")));
             ListItem::new(content)
         })
         .collect();
-    let messages = List::new(messages).block(Block::bordered().title("Messages"));
     
     //render all tabs
-    f.render_widget(sometitle, fields[0]);
-    f.render_widget(time_input, fields[1]);
-    f.render_widget(weekdays, fields[2]);
-    f.render_widget(dayofmonth, fields[3]);
+    f.render_widget(title_block, fields[0]);
+    f.render_widget(time_block, fields[1]);
+    f.render_widget(command_block, fields[2]);
+    f.render_widget(weekday_block, fields[3]);
     f.render_widget(messages, fields[4]);
 
   
@@ -248,7 +255,7 @@ fn exit_tab(f: &mut Frame, app: &mut App, tab: Rect) {
         .split(tab);
 
     let context =
-        Paragraph::new("Main menu context").block(Block::bordered().title("context"));
+        Paragraph::new("Main menu context").block(Block::bordered().title("Context"));
     let other = Paragraph::new("we are locked in!").block(Block::bordered().title("Other"));
     f.render_widget(context, window[0]);
     f.render_widget(other, window[1]);
@@ -304,4 +311,14 @@ fn cron_maker(f: &mut Frame, app: &mut App, area: Rect) {
             Constraint::Min(5),
         ])
         .split(area);
+}
+
+pub fn set_cursor (app: &mut App, f: &mut Frame, pos: Rect) {
+    f.set_cursor(
+        // Draw the cursor at the current position in the input field.
+        // This position is can be controlled via the left and right arrow key
+        pos.x + app.character_index as u16 + 1,
+        // Move one line down, from the border to the input line
+        pos.y + 1,
+    );
 }
