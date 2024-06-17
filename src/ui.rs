@@ -171,15 +171,26 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
         // Move one line down, from the border to the input line
         fields[1].y + 1,
     );
+
+    let messages: Vec<ListItem> = app
+        .messages
+        .iter()
+        .enumerate()
+        .map(|(i, m)| {
+            let content = Line::from(Span::raw(format!("{i}: {m}")));
+            ListItem::new(content)
+        })
+        .collect();
+    let messages = List::new(messages).block(Block::bordered().title("Messages"));
     
     //render all tabs
     f.render_widget(sometitle, fields[0]);
     f.render_widget(time_input, fields[1]);
     f.render_widget(weekdays, fields[2]);
     f.render_widget(dayofmonth, fields[3]);
-    f.render_widget(preview, fields[4]);
+    f.render_widget(messages, fields[4]);
 
-    
+  
 }
 fn edit_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     let mut window = Layout::default()

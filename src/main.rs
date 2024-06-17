@@ -112,10 +112,12 @@ fn key_handler(app: &mut App) {
                             KeyCode::Backspace => app.delete_char(),
 
                             KeyCode::Char('c') => {} //save whole cron task
+                            
+                            KeyCode::Char(to_insert) => app.enter_char(to_insert),
 
-                            KeyCode::Char('a') | KeyCode::Char('A') | KeyCode::Left => app.next_input(),
+                            KeyCode::Up => app.next_input(),
 
-                            KeyCode::Char('d') | KeyCode::Char('D') | KeyCode::Right => app.previous_input(),
+                            KeyCode::Down=> app.previous_input(),
 
                             _ => {}
                         },
