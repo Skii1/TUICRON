@@ -9,14 +9,15 @@ use ratatui::{
 use std::rc::Rc;
 
 use crate::app::{App, CurrentTab, InputState};
-pub fn render_ui(f: &mut Frame, app: &mut App) {
+use crate::cron::CronTask;
+
+pub fn render_ui(f: &mut Frame, app: &mut App, cron: &mut CronTask) {
     let layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(1), //Tab Toolbar
             Constraint::Min(5), //TEMPORARY ?todo REMOVE once inner blocks are properly implemented WHY : something is targeting the layout. causing it to break
-            Constraint::Length(1), //Main Body, main block as Tab title and contents
-            Constraint::Length(1), //Footer, key bind tips
+            Constraint::Length(3), //Footer, key bind tips
         ])
         .split(f.size());
     
@@ -27,10 +28,10 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
     let tab_frame = tab_frame(f, app, layout[1]);
     
     //TAB BODY
-    render_tab(f, app, tab_frame);
+    render_tab(f, app, cron, tab_frame);
 
     //FOOTER
-    render_footer(f, app, layout[3]);
+    render_footer(f, app, layout[2]);
     //Here, the middle segment of the screen is organized differently depending on the selected tab, text, and widget content is specified later
 }
 
@@ -75,7 +76,7 @@ fn render_toolbar(f: &mut Frame, app: &mut App, area: Rect) {
         .highlight_style(Style::default().yellow().bg(Color::Rgb(50, 50, 50)))
         .select(app.option)
         .padding(" ", " ")
-        .divider(" ");
+        .divider("|");
 
     f.render_widget(tab_bar, area);
 }
@@ -88,18 +89,25 @@ fn render_footer(f: &mut Frame, app: &mut App, area: Rect) {
             CurrentTab::Options => "Navigate Tabs (↹ Tab) | Navigate Fields ( ↑ ↓ ← →) | Select Job (Enter) | Cancel (Esc) | Confirm Edit (C) |",
             CurrentTab::Exit => "Navigate Tabs (↹ Tab) | Exit (Y) |",
         };
+    let footer_block = Block::new().borders(Borders::ALL)
+        .border_type(BorderType::Double)
+        .style(Style::new()
+            .on_light_yellow()
+            .bg(Color::Rgb(0, 0, 155)));
     let footer = Paragraph::new(key_tips)
-        .style(Style::new().white().bg(Color::Rgb(0, 0, 155)))
+        .style(Color::White)
         .alignment(Alignment::Center)
+        .block(footer_block)
         .wrap(Wrap { trim: true });
-    f.render_widget(footer, area)
+   
+    f.render_widget(footer, area);
 }
 
-fn render_tab(f: &mut Frame, app: &mut App, tab: Rect) {
+fn render_tab(f: &mut Frame, app: &mut App, cron: &mut CronTask, tab: Rect) {
     match app.selected_tab {
         CurrentTab::Menu => menu_tab(f, app, tab),
         CurrentTab::Edit => edit_tab(f, app, tab),
-        CurrentTab::New => new_tab(f, app, tab),
+        CurrentTab::New => new_tab(f, app, cron, tab),
         CurrentTab::Options => options_tab(f, app, tab),
         CurrentTab::Exit => exit_tab(f, app, tab), //why does this work now, wtf???
     }
@@ -122,10 +130,14 @@ fn menu_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     f.render_widget(context, window[0]);
     f.render_widget(other, window[1]);
 }
-fn new_tab(f: &mut Frame, app: &mut App, tab: Rect,) {
+fn new_tab(f: &mut Frame, app: &mut App, cron: &mut CronTask, tab: Rect,) {
     let window = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(15), Constraint::Percentage(85)])
+        .constraints([
+            Constraint::Min(15),
+            Constraint::Min(25),
+            Constraint::Min(30),
+        ])
         .split(tab);
 
     let fields = Layout::default()
@@ -146,7 +158,7 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect,) {
 
     //content of cronmaker
     let input_style = Style::default().fg(Color::Yellow);
-    let title_block = Paragraph::new("TITLE")
+    let mut title_block = Paragraph::new("TITLE")
         .block(Block::bordered().title("TITLE"))
         .wrap(Wrap { trim: true });
     let mut time_block = Paragraph::new("Enter time, mm:hr")
@@ -164,38 +176,73 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect,) {
     match app.input_mode {
         InputState::Idle => {}
         InputState::Time => {
-            set_cursor(app, f, fields[1]);
-            let time_input = Paragraph::new(app.num_buffer)
+            set_cursor(app, f, fields[1], 0);
+            let input =  Text::from(vec![Line::from(vec![
+                "hr:mm | ".into(),
+                app.input_buffer.clone().red(),
+            ])]);
+            
+            let time_text = Paragraph::new(input)
                 .style(Style::default().fg(Color::Yellow))
                 .block(Block::bordered().title("Edit Time"));
-            time_block = time_input;
+            
+            time_block = time_text;
         }
         InputState::Script => {
-            set_cursor(app, f, fields[2]);
-            let command_input = Paragraph::new(app.input_buffer.as_str())
+            set_cursor(app, f, fields[2], 0);
+
+            let input =  Text::from(vec![Line::from(vec![
+                "Command | ".into(),
+                app.input_buffer.clone().red(),
+            ])]);
+            
+            let command_input = Paragraph::new(input)
                 .style(Style::default().fg(Color::Yellow))
                 .block(Block::bordered().title("Edit Command"));
+
             command_block = command_input;
         }
-        InputState::Confirm => {}
+        InputState::Weekday => {
+            set_cursor(app, f, fields[3], 0);
+
+            let input =  Text::from(vec![Line::from(vec![
+                "d-d | ".into(),
+                app.input_buffer.clone().red(),
+            ])]);
+
+            let weekday_input = Paragraph::new(input)
+                .style(Style::default().fg(Color::Yellow))
+                .block(Block::bordered().title("Edit Weekday(s)"));
+
+            weekday_block = weekday_input;
+            
+        }
+        InputState::Confirm => {
+            let preview_text = cron.print_task();
+            let mut preview_block = preview_text.block(Block::bordered());
+            
+            title_block = preview_block;
+        }
         _ => {}
     };
+    
     let messages: Vec<ListItem> = app
         .messages
         .iter()
         .enumerate()
         .map(|(i, m)| {
-            let content = Line::from(Span::raw(format!("{i} Time : {m}")));
+            let content = Line::from(Span::raw(format!("Task {i} | {m}:{m} on days [days here] run [script]")));
             ListItem::new(content)
         })
         .collect();
+    let lists = List::new(messages).block(Block::bordered().title("Messages"));
     
     //render all tabs
     f.render_widget(title_block, fields[0]);
     f.render_widget(time_block, fields[1]);
     f.render_widget(command_block, fields[2]);
     f.render_widget(weekday_block, fields[3]);
-    f.render_widget(messages, fields[4]);
+    f.render_widget(lists, fields[4]);
 
   
 }
@@ -313,11 +360,11 @@ fn cron_maker(f: &mut Frame, app: &mut App, area: Rect) {
         .split(area);
 }
 
-pub fn set_cursor (app: &mut App, f: &mut Frame, pos: Rect) {
+pub fn set_cursor (app: &mut App, f: &mut Frame, pos: Rect, offset: u16) {
     f.set_cursor(
         // Draw the cursor at the current position in the input field.
         // This position is can be controlled via the left and right arrow key
-        pos.x + app.character_index as u16 + 1,
+        (pos.x + app.character_index as u16 + 1) + offset,
         // Move one line down, from the border to the input line
         pos.y + 1,
     );

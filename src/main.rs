@@ -49,7 +49,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App, cron: &mut Cro
     //Main APP loop
     while !app.exit {
         //todo? for self, learn closures more, might be helpful
-        terminal.draw(|f| render_ui(f, app))?;
+        terminal.draw(|f| render_ui(f, app, cron))?;
         key_handler(app, cron);
         app.change_menu();
     }
@@ -99,6 +99,8 @@ fn key_handler(app: &mut App, cron: &mut CronTask) {
                         match key.code {
                             KeyCode::Enter => {
                                 app.submit_message();
+                                cron.minute = app.input_buffer.clone();
+                                cron.hour = app.input_buffer.clone();
                                 app.input_mode = InputState::Script;
                             }
 
@@ -107,12 +109,13 @@ fn key_handler(app: &mut App, cron: &mut CronTask) {
                             KeyCode::Backspace => app.delete_char(),
                             
                             KeyCode::Char(to_insert) => app.enter_char(to_insert),
-
+                            
+                            /* this is mostly pointless, just get text instead
                             KeyCode::Up => {
                                 let max:usize = 30;
                                 app.inc_buffer(max);
                             },
-
+                            */
                             //KeyCode::Down=> app.dec_buffer(),
 
                             _ => {}
@@ -121,6 +124,7 @@ fn key_handler(app: &mut App, cron: &mut CronTask) {
                     InputState::Script =>
                         match key.code {
                             KeyCode::Enter => {
+                                cron.command = app.input_buffer.clone();
                                 app.submit_message();
                                 app.input_mode = InputState::Weekday;
                             },
@@ -141,6 +145,7 @@ fn key_handler(app: &mut App, cron: &mut CronTask) {
                     InputState::Weekday =>
                         match key.code {
                             KeyCode::Enter => {
+                                cron.weekday = app.input_buffer.clone();
                                 app.submit_message();
                                 app.input_mode = InputState::Confirm;
                             },

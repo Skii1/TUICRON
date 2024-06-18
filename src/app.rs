@@ -30,16 +30,12 @@ pub struct App {
     pub tabs: Vec<String>,
     pub option: usize,
     pub exit: bool,
-    pub focused_tab: CurrentTab,
     pub input_buffer: String,
-    pub time_input: String,
-    pub script_input: String,
-    pub weekday_input: String,
-    pub num_buffer: usize,
     pub character_index: usize,
     pub input_mode: InputState,
     pub messages: Vec<String>,
-    pub input_state: Option<usize>
+    pub input_state: Option<usize>,
+    pub num_buffer: usize,
     /*
     pub minute: u8,
     pub hour: u8,
@@ -57,24 +53,20 @@ impl App {
             selected_tab: CurrentTab::Menu,
             input_buffer: String::new(),
             num_buffer: 0,
-            time_input: String::new(),
-            script_input: String::new(),
-            weekday_input: String::new(),
             character_index: 0,
             input_mode: InputState::Idle,
             messages: Vec::new(), 
             currently_editing: None,
             tab_state: ListState::default().with_selected(Some(0)),
             tabs: vec![
-                String::from("Menu"),
-                String::from("New"),
-                String::from("Edit"),
-                String::from("Options"),
-                String::from("Exit"),
+                String::from(" Menu "),
+                String::from(" New "),
+                String::from(" Edit "),
+                String::from(" Options "),
+                String::from(" Exit "),
             ],
             option: 0,
             exit: false,
-            focused_tab: CurrentTab::Menu,
             input_state: None,
             //main_layout: Layout
             //body_layout: Layout::default().direction(Direction::Vertical).constraints([Constraint::Percentage(100)]).split(chunks[1])
@@ -256,14 +248,8 @@ impl App {
         self.character_index = 0;
     }
 
-    pub fn push_time(&mut self) {
-        self.messages.push(self.time_input.clone());
-        self.input_buffer.clear();
-        self.reset_cursor();
-    }
-
     pub fn push_command(&mut self) {
-        self.messages.push(self.time_input.clone());
+        self.messages.push(self.input_buffer.clone());
         self.input_buffer.clear();
         self.reset_cursor();
     }
@@ -275,12 +261,12 @@ impl App {
     }
 
     pub fn submit_message(&mut self) {
-       // cron.messages.push(self.time_input.clone());
+       // cron.messages.push(self.input_buffer.clone());
+        self.messages.push(self.input_buffer.clone());
         self.input_buffer.clear();
         self.reset_cursor();
     }
     pub fn num_buff_to_str() {
-
 
     }
 
