@@ -248,26 +248,10 @@ impl App {
         self.character_index = 0;
     }
 
-    pub fn push_command(&mut self) {
-        self.messages.push(self.input_buffer.clone());
-        self.input_buffer.clear();
-        self.reset_cursor();
-    }
-
-    pub fn push_weekday(&mut self) {
-       // cron.messages.push(self.input_buffer.clone());
-        self.input_buffer.clear();
-        self.reset_cursor();
-    }
-
     pub fn submit_message(&mut self) {
        // cron.messages.push(self.input_buffer.clone());
         self.messages.push(self.input_buffer.clone());
         self.input_buffer.clear();
         self.reset_cursor();
     }
-    pub fn num_buff_to_str() {
-
-    }
-
 }

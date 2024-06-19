@@ -1,6 +1,9 @@
-use ratatui::text::Span;
+use ratatui::layout::Constraint;
+use ratatui::prelude::Stylize;
+use ratatui::style::Style;
+use ratatui::text::{Span, Text};
 use ratatui::widgets::canvas::Line;
-use ratatui::widgets::Paragraph;
+use ratatui::widgets::{Block, Paragraph, Row, Table};
 use crate::app::{App, CurrentTab, InputState};
 use crate::ui::render_ui;
 
@@ -21,7 +24,7 @@ pub struct CronTask {
 }
 
 impl CronTask {
-    pub fn new () -> CronTask {
+    pub fn new() -> CronTask {
         CronTask {
             time: String::new(),
             minute: String::new(),
@@ -48,24 +51,23 @@ impl CronTask {
             InputState::Time => self.time = input,
             InputState::Script => self.command = input,
             InputState::Weekday => self.weekday = input,
-            InputState::Confirm => {}
+            InputState::Confirm => self.form_task()
         }
     }
     pub fn form_task(&mut self) {
-       let sample = String::from("* * * * *");
+        let sample = String::from("* * * * *");
         let placeholder = String::from("*m *hr *dom *mon *dow");
         let demo = Paragraph::new("CRON : {self.command} at {self.time} on days {}");
     }
 
     pub fn print_task(&mut self) -> Paragraph {
-        let task = Paragraph::new("CRON : {self.command} at {self.time} on days {self.week}");
-        task
+        let task_item = Paragraph::new(format!("CRON : {} at {} on days {}", self.command, self.time, self.weekday));
+        task_item
     }
     pub fn push_task() {}
 
     pub fn get_logs() {}
 
     pub fn get_task() {}
-
 }
 

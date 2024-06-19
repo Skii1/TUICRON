@@ -80,8 +80,8 @@ fn key_handler(app: &mut App, cron: &mut CronTask) {
                 
                 CurrentTab::Edit => match key.code {
                     KeyCode::Enter => {}
-                    KeyCode::Char('w') | KeyCode::Char('W') | KeyCode::Up  => {}
-                    KeyCode::Char('s') | KeyCode::Char('S') | KeyCode::Down  => {}
+                    KeyCode::Char('w') | KeyCode::Char('W') | KeyCode::Up  => app.next_input(),
+                    KeyCode::Char('s') | KeyCode::Char('S') | KeyCode::Down  => app.previous_input(),
                     _ => {}
                 },
 
@@ -98,9 +98,10 @@ fn key_handler(app: &mut App, cron: &mut CronTask) {
                     InputState::Time =>
                         match key.code {
                             KeyCode::Enter => {
-                                app.submit_message();
                                 cron.minute = app.input_buffer.clone();
                                 cron.hour = app.input_buffer.clone();
+                                cron.time = app.input_buffer.clone();
+                                app.submit_message();
                                 app.input_mode = InputState::Script;
                             }
 
