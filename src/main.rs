@@ -30,8 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let backend = CrosstermBackend::new(stdout());
     let mut terminal = Terminal::new(backend)?;
     let mut app = App::new();
-    let mut cron = CronTask::new();
-    let res = run_app(&mut terminal, &mut app, &mut cron);
+    let res = run_app(&mut terminal, &mut app);
 
     //Terminal Cleanup
     disable_raw_mode()?;
@@ -45,30 +44,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App, cron: &mut CronTask) -> io::Result<bool> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<bool> {
     //Main APP loop
     while !app.exit {
         //todo? for self, learn closures more, might be helpful
-        terminal.draw(|f| render_ui(f, app, cron))?;
-        key_handler(app, cron);
+        terminal.draw(|f| render_ui(f, app))?;
+        key_handler(app);
         app.change_menu();
     }
     Ok(true)
 }
 //todo? Add selection of the new item, change the screen state depending on the selected type. Make new menus.
-fn key_handler(app: &mut App, cron: &mut CronTask) {
+fn key_handler(app: &mut App) {
     if let Ok(Event::Key(key)) = event::read() {
         if key.kind == event::KeyEventKind::Press {
             //General Key Binds
             match key.code {
-                KeyCode::Esc => {
-                    app.selected_tab = CurrentTab::Exit;
-                }
                 KeyCode::Tab => {
                     app.scroll_tab();
                 }
                 _ => {}
             };
+
             match app.selected_tab {
                 //Menu Key Binds
                 CurrentTab::Menu => match key.code {
@@ -80,86 +77,106 @@ fn key_handler(app: &mut App, cron: &mut CronTask) {
                 
                 CurrentTab::Edit => match key.code {
                     KeyCode::Enter => {}
-                    KeyCode::Char('w') | KeyCode::Char('W') | KeyCode::Up  => app.next_input(),
-                    KeyCode::Char('s') | KeyCode::Char('S') | KeyCode::Down  => app.previous_input(),
+                    KeyCode::Up  => app.next_input(),
+
                     _ => {}
                 },
 
                 CurrentTab::New => match app.input_mode {
+
                     InputState::Idle =>
+
                         match key.code {
+
                             KeyCode::Char('n') => {
-                                app.input_mode = InputState::Time;
+                                app.input_mode = InputState::Minute;
                             }
                             KeyCode::Esc => {}
                             _ => {}
                         },
 
-                    InputState::Time =>
+                    InputState::Minute =>
                         match key.code {
-                            KeyCode::Enter => {
-                                cron.minute = app.input_buffer.clone();
-                                cron.hour = app.input_buffer.clone();
-                                cron.time = app.input_buffer.clone();
-                                app.submit_message();
-                                app.input_mode = InputState::Script;
-                            }
-
-                            KeyCode::Esc => app.input_mode = InputState::Idle,
-
-                            KeyCode::Backspace => app.delete_char(),
-                            
-                            KeyCode::Char(to_insert) => app.enter_char(to_insert),
-                            
-                            /* this is mostly pointless, just get text instead
-                            KeyCode::Up => {
-                                let max:usize = 30;
-                                app.inc_buffer(max);
+                            KeyCode::Esc => {
+                                app.input_mode = InputState::Idle;
                             },
-                            */
-                            //KeyCode::Down=> app.dec_buffer(),
+
+                            KeyCode::Char(c) => {
+                                app.minute_buffer.push(c);
+                            },
+
+                            KeyCode::Backspace => {
+                                app.minute_buffer.pop();
+                            },
+
+                            KeyCode::Enter => {
+                                app.input_mode = InputState::Hour;
+                            },
+                            
+                            _ => {}
+                        },
+
+                    InputState::Hour =>
+                        match key.code {
+                            KeyCode::Esc => {
+                                app.input_mode = InputState::Idle;
+                            },
+
+                            KeyCode::Char(c) => {
+                                app.hour_buffer.push(c);
+                            },
+
+                            KeyCode::Backspace => {
+                                app.hour_buffer.pop();
+                            },
+
+                            KeyCode::Enter => {
+                                app.input_mode = InputState::Script;
+                            },
 
                             _ => {}
                         },
 
                     InputState::Script =>
                         match key.code {
-                            KeyCode::Enter => {
-                                cron.command = app.input_buffer.clone();
-                                app.submit_message();
-                                app.input_mode = InputState::Weekday;
+
+                            KeyCode::Esc => {
+                                app.input_mode = InputState::Idle;
                             },
 
-                            KeyCode::Esc => app.input_mode = InputState::Idle,
+                            KeyCode::Char(c) => {
+                                app.command_buffer.push(c);
+                            },
 
-                            KeyCode::Backspace => app.delete_char(),
+                            KeyCode::Backspace => {
+                                app.command_buffer.pop();
+                            },
 
-                            KeyCode::Char(to_insert) => app.enter_char(to_insert),
-
-                            KeyCode::Up => app.next_input(),
-
-                            KeyCode::Down=> app.previous_input(),
+                            KeyCode::Enter => {
+                                app.input_mode = InputState::Weekday;
+                            },
 
                             _ => {}
                         },
 
                     InputState::Weekday =>
                         match key.code {
-                            KeyCode::Enter => {
-                                cron.weekday = app.input_buffer.clone();
-                                app.submit_message();
-                                app.input_mode = InputState::Confirm;
+
+                            KeyCode::Esc => {
+                                app.input_mode = InputState::Idle;
                             },
 
-                            KeyCode::Esc => app.input_mode = InputState::Idle,
+                            KeyCode::Char(c) => {
+                                app.weekday_buffer.push(c);
+                            },
 
-                            KeyCode::Backspace => app.delete_char(),
+                            KeyCode::Backspace => {
+                                app.weekday_buffer.pop();
+                            },
 
-                            KeyCode::Char(to_insert) => app.enter_char(to_insert),
-
-                            KeyCode::Up => app.next_input(),
-
-                            KeyCode::Down=> app.previous_input(),
+                            KeyCode::Enter => {
+                                app.input_mode = InputState::Confirm;
+                            },
 
                             _ => {}
                         },
@@ -169,13 +186,13 @@ fn key_handler(app: &mut App, cron: &mut CronTask) {
                             KeyCode::Esc => app.input_mode = InputState::Idle,
 
                             KeyCode::Enter => {
-                                app.submit_message();
-                                app.input_mode = InputState::Time;
+                                app.push_task();
+                                app.input_mode = InputState::Idle;
                             }
 
-                            KeyCode::Up => app.next_input(),
-
-                            KeyCode::Down => app.previous_input(),
+                            KeyCode::Backspace => {
+                                app.input_mode = InputState::Minute;
+                            }
 
                             _ => {}
                         },

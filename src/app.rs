@@ -1,6 +1,7 @@
 use ratatui::{prelude::*, widgets::*};
 use std::clone::Clone;
 use std::{io, error};
+use crate::CronTask;
 
 //GUIDE CODE
 pub enum CurrentTab {
@@ -18,7 +19,8 @@ pub enum Focused {
 //GUIDE CODE
 pub enum InputState {
     Idle,
-    Time,
+    Minute,
+    Hour,
     Script,
     Weekday,
     Confirm,
@@ -30,19 +32,18 @@ pub struct App {
     pub tabs: Vec<String>,
     pub option: usize,
     pub exit: bool,
-    pub input_buffer: String,
     pub character_index: usize,
     pub input_mode: InputState,
     pub messages: Vec<String>,
     pub input_state: Option<usize>,
-    pub num_buffer: usize,
-    /*
-    pub minute: u8,
-    pub hour: u8,
-    pub day: u8,
-    pub day_of_month: u8,
-    pub day_of_week: u8,
-     */
+    pub tasks: Vec<CronTask>,
+    pub task_list: Vec<CronTask>,
+    pub minute_buffer: String,
+    pub hour_buffer: String,
+    pub weekday_buffer:String,
+    pub command_buffer: String,
+    pub periodic_buffer: bool,
+    pub formatted_cron: String,
 }
 
 //App method, pass to main
@@ -51,8 +52,6 @@ impl App {
         //initialize values part of App struct
         App {
             selected_tab: CurrentTab::Menu,
-            input_buffer: String::new(),
-            num_buffer: 0,
             character_index: 0,
             input_mode: InputState::Idle,
             messages: Vec::new(), 
@@ -68,8 +67,14 @@ impl App {
             option: 0,
             exit: false,
             input_state: None,
-            //main_layout: Layout
-            //body_layout: Layout::default().direction(Direction::Vertical).constraints([Constraint::Percentage(100)]).split(chunks[1])
+            tasks: vec![],
+            task_list: vec![],
+            minute_buffer: String::new(),
+            hour_buffer: String::new(),
+            weekday_buffer: String::new(),
+            command_buffer: String::new(),
+            periodic_buffer: false,
+            formatted_cron: String::new(),
         }
     }
     //unused helper function
@@ -101,7 +106,7 @@ impl App {
         };
         self.tab_state.select(Some(i));
     }
-
+/*
     pub fn inc_buffer(&mut self, max: usize)  {
         let mut i = self.num_buffer;
                 if i == max - 1 {
@@ -126,7 +131,7 @@ impl App {
         };
         self.input_state = Some(v);
     }
-    
+    */
     pub fn next_input(&mut self) {
         let v = match self.input_state {
             Some(v) => {
@@ -178,80 +183,47 @@ impl App {
 
     pub fn change_input(&mut self) {
         match self.input_state {
-            Some(0) => self.input_mode = InputState::Time,
+            Some(0) => self.input_mode = InputState::Minute,
             Some(1) => self.input_mode = InputState::Script,
             None => self.input_mode = InputState::Idle,
             _ => {}
         };
     }
-    pub fn exit(&mut self) {
-        self.exit = true;
-    }
-    //unused helper function
-   
-
-    pub fn move_cursor_left(&mut self) {
-        let cursor_moved_left = self.character_index.saturating_sub(1);
-        self.character_index = self.clamp_cursor(cursor_moved_left);
-    }
-
-    pub fn move_cursor_right(&mut self) {
-        let cursor_moved_right = self.character_index.saturating_add(1);
-        self.character_index = self.clamp_cursor(cursor_moved_right);
-    }
-
-   pub fn enter_char(&mut self, new_char: char) {
-        let index = self.byte_index();
-        self.input_buffer.insert(index, new_char);
-        self.move_cursor_right();
-    }
-
-    /// Returns the byte index based on the character position.
-    ///
-    /// Since each character in a string can be contain multiple bytes, it's necessary to calculate
-    /// the byte index based on the index of the character.
-    pub fn byte_index(&mut self) -> usize {
-        self.input_buffer
-            .char_indices()
-            .map(|(i, _)| i)
-            .nth(self.character_index)
-            .unwrap_or(self.input_buffer.len())
-    }
-
-    pub fn delete_char(&mut self) {
-        let is_not_cursor_leftmost = self.character_index != 0;
-        if is_not_cursor_leftmost {
-            // Method "remove" is not used on the saved text for deleting the selected char.
-            // Reason: Using remove on String works on bytes instead of the chars.
-            // Using remove would require special care because of char boundaries.
-
-            let current_index = self.character_index;
-            let from_left_to_current_index = current_index - 1;
-
-            // Getting all characters before the selected character.
-            let before_char_to_delete = self.input_buffer.chars().take(from_left_to_current_index);
-            // Getting all characters after selected character.
-            let after_char_to_delete = self.input_buffer.chars().skip(current_index);
-
-            // Put all characters together except the selected one.
-            // By leaving the selected one out, it is forgotten and therefore deleted.
-            self.input_buffer = before_char_to_delete.chain(after_char_to_delete).collect();
-            self.move_cursor_left();
-        }
-    }
-
-    pub fn clamp_cursor(&self, new_cursor_pos: usize) -> usize {
-        new_cursor_pos.clamp(0, self.input_buffer.chars().count())
-    }
-
+    
     pub fn reset_cursor(&mut self) {
         self.character_index = 0;
     }
-
-    pub fn submit_message(&mut self) {
-       // cron.messages.push(self.input_buffer.clone());
-        self.messages.push(self.input_buffer.clone());
-        self.input_buffer.clear();
-        self.reset_cursor();
+    pub fn clear_fields(&mut self) {
+        self.minute_buffer.clear();
+        self.hour_buffer.clear();
+        self.weekday_buffer.clear();
+        self.minute_buffer.clear();
+        self.minute_buffer.clear();
+    }
+    pub fn push_task(&mut self) {
+        let crontask = CronTask::new(
+            self.minute_buffer.to_owned(),
+            self.hour_buffer.to_owned(),
+            self.weekday_buffer.to_owned(),
+            self.command_buffer.to_owned(),
+            self.periodic_buffer.to_owned(),
+        );
+        self.clear_fields();
+        self.input_mode = InputState::Idle;
+    }
+    pub fn exit(&mut self) {
+        self.exit = true;
+    }
+    pub fn format_task(&mut self) -> String {
+        if self.periodic_buffer == true {
+           let periodic = format!("*/{} */{} * * {} {}", self.minute_buffer, self.hour_buffer, self.weekday_buffer, self.command_buffer);
+            //self.formatted_cron = periodic.clone();
+            periodic
+        }
+        else {
+            let once = format!("{} {} * * {} {}", self.minute_buffer, self.hour_buffer, self.weekday_buffer, self.command_buffer);
+            //self.formatted_cron = once.clone();
+            once
+        }
     }
 }
