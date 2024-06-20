@@ -168,9 +168,11 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     f.render_widget(context, window[0]);
     
     let input_style = Style::default().fg(Color::Green);
+    
     let mut title_block = Paragraph::new("Placeholder")
         .block(Block::bordered().title("TITLE"))
         .wrap(Wrap { trim: true });
+    
     let minute_text = if app.minute_buffer.is_empty() {
         String::from("Enter Minute : ")
     }
@@ -179,14 +181,36 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     };
     let mut minute_block =
         Paragraph::new(minute_text).block(Block::bordered().title("Minute"));
+
+    let hour_text = if app.minute_buffer.is_empty() {
+        String::from("Enter Hour : ")
+    }
+    else {
+        app.hour_buffer.clone()
+    };
     let mut hour_block =
-        Paragraph::new("Enter Hour : ").block(Block::bordered().title("Hour"));
-    let mut command_block = Paragraph::new("Enter your command or script to be run here.")
+        Paragraph::new(hour_text).block(Block::bordered().title("Hour"));
+    
+    let command_text = if app.minute_buffer.is_empty() {
+        String::from("Enter Minute : ")
+    }
+    else {
+        app.command_buffer.clone()
+    };
+    let mut command_block = Paragraph::new(command_text)
         .block(Block::bordered().title("Command"))
         .wrap(Wrap { trim: true });
-    let mut weekday_block = Paragraph::new("Enter a value, in a range, a-b, where a and b are day values, 0 indexed from Sunday. (e.g : 1-5 is running Monday to Friday")
+    
+    let weekday_text = if app.minute_buffer.is_empty() {
+        String::from("Enter a value, in a range, a-b, where a and b are day values, 0 indexed from Sunday. (e.g : 1-5 is running Monday to Friday")
+    }
+    else {
+        app.weekday_buffer.clone()
+    };
+    let mut weekday_block = Paragraph::new(weekday_text)
         .block(Block::bordered().title("Weekday(s)"))
         .wrap(Wrap { trim: true });
+    
     let mut preview = Paragraph::new(app.format_task())
         .block(Block::bordered().title("Preview Task"))
         .wrap(Wrap { trim: true });

@@ -131,6 +131,30 @@ fn key_handler(app: &mut App) {
                             },
 
                             KeyCode::Enter => {
+                                app.input_mode = InputState::Weekday;
+                            },
+
+                            _ => {}
+                        },
+
+                   
+
+                    InputState::Weekday =>
+                        match key.code {
+
+                            KeyCode::Esc => {
+                                app.input_mode = InputState::Idle;
+                            },
+
+                            KeyCode::Char(c) => {
+                                app.weekday_buffer.push(c);
+                            },
+
+                            KeyCode::Backspace => {
+                                app.weekday_buffer.pop();
+                            },
+
+                            KeyCode::Enter => {
                                 app.input_mode = InputState::Script;
                             },
 
@@ -153,34 +177,12 @@ fn key_handler(app: &mut App) {
                             },
 
                             KeyCode::Enter => {
-                                app.input_mode = InputState::Weekday;
-                            },
-
-                            _ => {}
-                        },
-
-                    InputState::Weekday =>
-                        match key.code {
-
-                            KeyCode::Esc => {
-                                app.input_mode = InputState::Idle;
-                            },
-
-                            KeyCode::Char(c) => {
-                                app.weekday_buffer.push(c);
-                            },
-
-                            KeyCode::Backspace => {
-                                app.weekday_buffer.pop();
-                            },
-
-                            KeyCode::Enter => {
                                 app.input_mode = InputState::Confirm;
                             },
 
                             _ => {}
                         },
-
+                    
                     InputState::Confirm =>
                         match key.code {
                             KeyCode::Esc => app.input_mode = InputState::Idle,

@@ -197,8 +197,8 @@ impl App {
         self.minute_buffer.clear();
         self.hour_buffer.clear();
         self.weekday_buffer.clear();
-        self.minute_buffer.clear();
-        self.minute_buffer.clear();
+        self.command_buffer.clear();
+        self.periodic_buffer = false;
     }
     pub fn push_task(&mut self) {
         let crontask = CronTask::new(
