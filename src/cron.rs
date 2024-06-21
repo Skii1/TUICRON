@@ -10,6 +10,7 @@ use crate::ui::render_ui;
 pub struct CronTask {
     pub minute: String,
     pub hour: String,
+    pub time: String,
     pub weekday: String,
     pub command: String,
     pub periodic: bool,
@@ -21,6 +22,7 @@ impl CronTask {
         CronTask {
             minute,
             hour,
+            time,
             weekday,
             command,
             periodic,
@@ -28,17 +30,9 @@ impl CronTask {
     }
 
     //todo? find a way to formulate the cron task struct into a list / database vector OF cron tasks.
-    pub fn form_task(&mut self) {
-        String::from(format!("{}", self.minute));
+    pub fn form_task(&mut self, app: &mut App) {
         
     }
-
-    pub fn print_task(&mut self) -> Paragraph {
-        let task_item = Paragraph::new(format!("CRON : {} at {} on days {}", self.command, self.minute, self.weekday));
-        task_item
-    }
     pub fn get_logs() {}
-
-    pub fn get_task() {}
 }
 

@@ -2,6 +2,41 @@ use ratatui::{prelude::*, widgets::*};
 use std::clone::Clone;
 use std::{io, error};
 use crate::CronTask;
+use itertools::Itertools;
+use style::palette::tailwind;
+
+const PALETTES: [tailwind::Palette; 4] = [
+    tailwind::BLUE,
+    tailwind::EMERALD,
+    tailwind::INDIGO,
+    tailwind::RED,
+];
+
+struct TableColors {
+    buffer_bg: Color,
+    header_bg: Color,
+    header_fg: Color,
+    row_fg: Color,
+    selected_style_fg: Color,
+    normal_row_color: Color,
+    alt_row_color: Color,
+    footer_border_color: Color,
+}
+
+impl TableColors {
+    const fn new(color: &tailwind::Palette) -> Self {
+        Self {
+            buffer_bg: tailwind::SLATE.c950,
+            header_bg: color.c900,
+            header_fg: tailwind::SLATE.c200,
+            row_fg: tailwind::SLATE.c200,
+            selected_style_fg: color.c400,
+            normal_row_color: tailwind::SLATE.c950,
+            alt_row_color: tailwind::SLATE.c900,
+            footer_border_color: color.c400,
+        }
+    }
+}
 
 //GUIDE CODE
 pub enum CurrentTab {
@@ -44,6 +79,7 @@ pub struct App {
     pub command_buffer: String,
     pub periodic_buffer: bool,
     pub formatted_cron: String,
+    pub colors: TableColors,
 }
 
 //App method, pass to main
@@ -75,6 +111,7 @@ impl App {
             command_buffer: String::new(),
             periodic_buffer: false,
             formatted_cron: String::new(),
+            colors: TableColors::new(&PALETTES[0]),
         }
     }
     //unused helper function
@@ -225,5 +262,18 @@ impl App {
             //self.formatted_cron = once.clone();
             once
         }
+    }
+    pub fn make_task(&mut self, cron: &mut CronTask) {
+        let task = CronTask::new(
+            self.minute_buffer.to_owned(),
+            self.hour_buffer.to_owned(),
+            self.command_buffer.to_owned(),
+            self.weekday_buffer.to_owned(),
+            self.periodic_buffer.to_owned()
+        );
+        
+        self.tasks.push(task);
+        self.clear_fields();
+        self.input_mode = InputState::Idle
     }
 }

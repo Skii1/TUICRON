@@ -162,10 +162,9 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
         ])
         .split(fields[1]);
 
-    let context = Paragraph::new("Press 'n' to make a new new cron task. Yellow highlighting indicates the selected item you are editing. Edit the values in the example format, shown while unselected")
+    let mut context = Paragraph::new("Press 'n' to make a new new cron task. Yellow highlighting indicates the selected item you are editing. Edit the values in the example format, shown while unselected")
         .block(Block::bordered().title("Context"))
         .wrap(Wrap { trim: true });
-    f.render_widget(context, window[0]);
     
     let input_style = Style::default().fg(Color::Green);
     
@@ -207,6 +206,7 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     else {
         app.weekday_buffer.clone()
     };
+    
     let mut weekday_block = Paragraph::new(weekday_text)
         .block(Block::bordered().title("Weekday(s)"))
         .wrap(Wrap { trim: true });
@@ -216,9 +216,17 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
         .wrap(Wrap { trim: true });
     
     match app.input_mode {
-        InputState::Idle => {}
+        InputState::Idle => {
+            context = Paragraph::new("Press (CTRL + P) at anytime to switch a task to be periodic. Periodic tasks will run at every specified time frame instead of on that time of day. (e.g, 09:45 non periodic runs at 9:45 AM, 9:45 Periodic runs every 9 hours and 45 minutes")
+                .block(Block::bordered().title("Context"))
+                .wrap(Wrap { trim: true });
+        }
         
         InputState::Minute => {
+            context = Paragraph::new("Enter a value in minutes (0-59).")
+                .block(Block::bordered().title("Context"))
+                .wrap(Wrap { trim: true });
+            
             let input = Text::from(vec![Line::from(vec![
                 "".into(),
                 app.minute_buffer.clone().red(),
@@ -231,6 +239,10 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
         }
 
         InputState::Hour => {
+            context = Paragraph::new("Enter a value in hours (0-23).")
+                .block(Block::bordered().title("Context"))
+                .wrap(Wrap { trim: true });
+            
             let input = Text::from(vec![Line::from(vec![
                 "".into(),
                 app.hour_buffer.clone().red(),
@@ -242,7 +254,10 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
            hour_block = hour_txt;
         }
         InputState::Script => {
-
+            context = Paragraph::new("Enter a command, or script path to be run here.")
+                .block(Block::bordered().title("Context"))
+                .wrap(Wrap { trim: true });
+            
             let input = Text::from(vec![Line::from(vec![
                 "Command | ".into(),
                 app.command_buffer.clone().red(),
@@ -255,7 +270,10 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
             command_block = command_input;
         }
         InputState::Weekday => {
-
+            context = Paragraph::new("Enter a day, or a range of days of the week for the task to be run. (Values are indexed 0-7, where Sunday is either 0 or 7. Monday is 1. Indicate a range of days by separating with a dash. (e.g, 1-5 is Monday to Friday")
+                .block(Block::bordered().title("Context"))
+                .wrap(Wrap { trim: true });
+            
             let input = Text::from(vec![Line::from(vec![
                 "d-d | ".into(),
                 app.weekday_buffer.clone().red(),
@@ -268,6 +286,9 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
             weekday_block = weekday_input;
         }
         InputState::Confirm => {
+            context = Paragraph::new("Ready to add this task? Press (Enter) to submit it, or (Backspace) to edit your options")
+                .block(Block::bordered().title("Context"))
+                .wrap(Wrap { trim: true });
            // let confirm = Paragraph::new("Would you like to add this task? Please check the preview and ensure everything is correct before submitting.");
             //let mut preview_block = preview.block(Block::bordered());
 
@@ -277,6 +298,7 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     };
     
     //render all tabs
+    f.render_widget(context, window[0]);
     f.render_widget(preview, fields[0]);
     f.render_widget(minute_block, time[0]);
     f.render_widget(hour_block, time[1]);
@@ -392,18 +414,14 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 }
 
 //parameters TBD. Since a state will be held, should it reference just app? or cron?
-fn cron_maker(f: &mut Frame, app: &mut App, area: Rect) {
-    let body = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Min(3), Constraint::Min(10), Constraint::Min(5)])
-        .split(area);
-}
-pub fn render_cronlist(f: &mut Frame, window: Rect) {
+
+pub fn render_cronlist(f: &mut Frame, app: &mut App, window: Rect) {
     let row = [Row::new((vec!["Task", "Time", "Weekday(s)"]))];
+    let rows =app.tasks.iter().enumerate().map(|(i, data))
     let widths = [
-        Constraint::Length(10),
-        Constraint::Length(5),
-        Constraint::Length(5),
+        Constraint::Fill(1),
+        Constraint::Fill(1),
+        Constraint::Fill(1),
     ];
 
     let table = Table::new(row, widths)
@@ -415,7 +433,7 @@ pub fn render_cronlist(f: &mut Frame, window: Rect) {
                 .bottom_margin(1),
         )
         .footer(Row::new(vec!["Footer"]))
-        .block(Block::new().title("CRONTable"))
+        .block(Block::bordered().title("CRONTable"))
         .highlight_style(Style::new().reversed())
         .highlight_symbol("[]");
     f.render_widget(table, window);
@@ -423,18 +441,57 @@ pub fn render_cronlist(f: &mut Frame, window: Rect) {
 
 pub fn preview_task(app: &mut App, f: &mut Frame, area: Rect) {
     let task = Paragraph::new(
-        format!("CRON : {} at {} on days {}", app.command_buffer, app.minute_buffer, app.weekday_buffer))
+        format!("CRON : {} at {}:{} on day(s) {}", app.command_buffer, app.hour_buffer, app.minute_buffer, app.weekday_buffer))
         .block(Block::bordered());
     f.render_widget(task, area);
 }
 
-pub fn get_context(app: &mut App) {
-    match app.input_mode {
-        InputState::Idle => {},
-        InputState::Minute => {},
-        InputState::Hour => {},
-        InputState::Weekday => {},
-        InputState::Script => {},
-        InputState::Confirm => {},
-    }
+fn render_table(f: &mut Frame, app: &mut App, area: Rect) {
+    let header_style = Style::default()
+        .fg(app.colors.header_fg)
+        .bg(app.colors.header_bg);
+    let selected_style = Style::default()
+        .add_modifier(Modifier::REVERSED)
+        .fg(app.colors.selected_style_fg);
+
+    let header = ["Name", "Address", "Email"]
+        .into_iter()
+        .map(Cell::from)
+        .collect::<Row>()
+        .style(header_style)
+        .height(1);
+    let rows = app.items.iter().enumerate().map(|(i, data)| {
+        let color = match i % 2 {
+            0 => app.colors.normal_row_color,
+            _ => app.colors.alt_row_color,
+        };
+        let item = data.ref_array();
+        item.into_iter()
+            .map(|content| Cell::from(Text::from(format!("\n{content}\n"))))
+            .collect::<Row>()
+            .style(Style::new().fg(app.colors.row_fg).bg(color))
+            .height(4)
+    });
+    let bar = " █ ";
+    let t = Table::new(
+        rows,
+        [
+            // + 1 is for padding.
+            Constraint::Length(10),
+            Constraint::Min(5),
+            Constraint::Min(5),
+        ],
+    )
+        .header(header)
+        .highlight_style(selected_style)
+        .highlight_symbol(Text::from(vec![
+            "".into(),
+            bar.into(),
+            bar.into(),
+            "".into(),
+        ]))
+        .bg(app.colors.buffer_bg)
+        .highlight_spacing(HighlightSpacing::Always);
+    //f.render_stateful_widget(t, area, &mut app.state); implement navigation later
+    f.render_widget(t, area);
 }
