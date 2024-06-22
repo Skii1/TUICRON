@@ -65,7 +65,7 @@ fn key_handler(app: &mut App) {
                 }
                 _ => {}
             };
-
+            //some empty matches for future implementation
             match app.selected_tab {
                 //Menu Key Binds
                 CurrentTab::Menu => match key.code {
@@ -77,8 +77,7 @@ fn key_handler(app: &mut App) {
 
                 CurrentTab::Edit => match key.code {
                     KeyCode::Enter => {}
-                    KeyCode::Up => app.next_input(),
-
+                    //KeyCode::Up => app.next(),
                     _ => {}
                 },
 
@@ -87,7 +86,9 @@ fn key_handler(app: &mut App) {
                         KeyCode::Char('n') => {
                             app.input_mode = InputState::Minute;
                         }
-                        KeyCode::Esc => {}
+                        KeyCode::Esc => {
+                            app.input_mode = InputState::Idle;
+                        }
                         _ => {}
                     },
 
@@ -102,6 +103,12 @@ fn key_handler(app: &mut App) {
 
                         KeyCode::Backspace => {
                             app.minute_buffer.pop();
+                        }
+                        KeyCode::Up => {
+                            app.next_field();
+                        }
+                        KeyCode::Down => {
+                            app.previous_field();
                         }
 
                         KeyCode::Enter => {
@@ -122,6 +129,12 @@ fn key_handler(app: &mut App) {
 
                         KeyCode::Backspace => {
                             app.hour_buffer.pop();
+                        }
+                        KeyCode::Up => {
+                            app.next_field();
+                        }
+                        KeyCode::Down => {
+                            app.previous_field();
                         }
 
                         KeyCode::Enter => {
@@ -144,6 +157,12 @@ fn key_handler(app: &mut App) {
                                 app.periodic_text = String::from("Periodic")
                             }
                         }
+                        KeyCode::Up => {
+                            app.next_field();
+                        }
+                        KeyCode::Down => {
+                            app.previous_field();
+                        }
                         KeyCode::Enter => {
                             app.input_mode = InputState::Weekday;
                         }
@@ -163,7 +182,12 @@ fn key_handler(app: &mut App) {
                         KeyCode::Backspace => {
                             app.weekday_buffer.pop();
                         }
-
+                        KeyCode::Up => {
+                            app.next_field();
+                        }
+                        KeyCode::Down => {
+                            app.previous_field();
+                        }
                         KeyCode::Enter => {
                             app.input_mode = InputState::Script;
                         }
@@ -183,7 +207,12 @@ fn key_handler(app: &mut App) {
                         KeyCode::Backspace => {
                             app.command_buffer.pop();
                         }
-
+                        KeyCode::Up => {
+                            app.next_field();
+                        }
+                        KeyCode::Down => {
+                            app.previous_field();
+                        }
                         KeyCode::Enter => {
                             app.input_mode = InputState::Confirm;
                         }
@@ -198,7 +227,12 @@ fn key_handler(app: &mut App) {
                             app.push_task();
                             app.input_mode = InputState::Idle;
                         }
-
+                        KeyCode::Up => {
+                            app.next_field();
+                        }
+                        KeyCode::Down => {
+                            app.previous_field();
+                        }
                         KeyCode::Backspace => {
                             app.input_mode = InputState::Minute;
                         }
@@ -212,6 +246,7 @@ fn key_handler(app: &mut App) {
                     KeyCode::Char('y') | KeyCode::Char('Y') => {
                         app.exit();
                     }
+                    //doesn't for some reason
                     KeyCode::Char('n') | KeyCode::Char('N') => {
                         app.selected_tab = CurrentTab::Menu;
                     }

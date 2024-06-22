@@ -151,7 +151,7 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
             Constraint::Length(3),
             Constraint::Length(3),
             Constraint::Min(3),
-            Constraint::Min(5),
+            Constraint::Length(3),
         ])
         .split(window[1]);
 
@@ -217,6 +217,12 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
         .block(Block::bordered().title("Preview Task"))
         .wrap(Wrap { trim: true });
 
+    let confirm_text = String::from("Make Task (Enter)");
+    let mut confirm_block = Paragraph::new(confirm_text)
+        .block(Block::bordered().title("Confirm"))
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true });
+    
     match app.input_mode {
         InputState::Idle => {
             context = Paragraph::new("Create a new task with (N). Find Tooltips on each field in this box, with information on how to select an option, and what the option does.")
@@ -267,7 +273,7 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
             ])]);
             let periodic_txt = Paragraph::new(input)
                 .style(Style::default().fg(Color::Yellow))
-                .block(Block::bordered().title("Edit Hour"));
+                .block(Block::bordered().title("Period"));
 
             periodic_block = periodic_txt;
         }
@@ -308,10 +314,12 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
             context = Paragraph::new("Ready to add this task? Press (Enter) to submit it, or (Backspace) to edit your options")
                 .block(Block::bordered().title("Context"))
                 .wrap(Wrap { trim: true });
-            // let confirm = Paragraph::new("Would you like to add this task? Please check the preview and ensure everything is correct before submitting.");
-            //let mut preview_block = preview.block(Block::bordered());
-
-            //title_block = preview_block;
+            let confirm_button = Paragraph::new("Add Task (Enter)")
+                .style(Style::default().fg(Color::Green))
+                .alignment(Alignment::Center)
+                .block(Block::bordered().title("Confirm"));
+            
+            confirm_block = confirm_button;
         }
         _ => {}
     };
@@ -325,6 +333,7 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     f.render_widget(periodic_block, time[2]);
     f.render_widget(weekday_block, fields[3]);
     f.render_widget(command_block, fields[4]);
+    f.render_widget(confirm_block, fields[5]);
     task_list(app, f, window[2]);
 }
 

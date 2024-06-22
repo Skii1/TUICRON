@@ -41,6 +41,7 @@ pub struct App {
     pub currently_editing: Option<InputState>,
     pub tab_state: ListState,
     pub tabs: Vec<String>,
+    pub fields: Vec<String>,
     pub option: usize,
     pub exit: bool,
     pub character_index: usize,
@@ -76,9 +77,17 @@ impl App {
                 String::from(" Options "),
                 String::from(" Exit "),
             ],
+            fields: vec![
+                String::from(" Minute "),
+                String::from(" Hour "),
+                String::from(" Period "),
+                String::from(" Weekday"),
+                String::from(" Command "),
+                String::from(" Confirm "),
+            ],
             option: 0,
             exit: false,
-            input_state: None,
+            input_state: Some(0),
             tasks: vec![],
             task_list: vec![],
             minute_buffer: String::new(),
@@ -90,11 +99,12 @@ impl App {
             periodic_text: String::new(),
         }
     }
-    //unused helper function
-    pub fn previous(&mut self) {
-        let i = match self.tab_state.selected() {
+ 
+    //Input state vs Input mode. Input state is the numerical index (usize), which is translated into "input mode", with the InputState type enum.
+    pub fn previous_field(&mut self) {
+        let i = match self.input_state {
             Some(i) => {
-                if i >= self.tabs.len() - 1 {
+                if i >= self.fields.len() - 1 {
                     0
                 } else {
                     i + 1
@@ -102,36 +112,25 @@ impl App {
             }
             None => 0,
         };
-        self.tab_state.select(Some(i));
+        self.input_state = Some(i);
+        self.change_input();
     }
-
-    //unused helper function
-    pub fn next(&mut self) {
-        let i = match self.tab_state.selected() {
+    
+    pub fn next_field(&mut self) {
+        let i = match self.input_state {
             Some(i) => {
                 if i == 0 {
-                    self.tabs.len() - 1
+                    self.fields.len() - 1
                 } else {
                     i - 1
                 }
             }
             None => 0,
         };
-        self.tab_state.select(Some(i));
+        self.input_state = Some(i);
+        self.change_input();
     }
-    pub fn next_input(&mut self) {
-        let v = match self.input_state {
-            Some(v) => {
-                if v == 0 {
-                    1
-                } else {
-                    v - 1
-                }
-            }
-            None => 0,
-        };
-        self.input_state = Some(v);
-    }
+ 
     //Equivalent to the next function, just for scrolling tabs with one key
     pub fn scroll_tab(&mut self) {
         if self.option == self.tabs.len() - 1 {
@@ -168,17 +167,18 @@ impl App {
         };
     }
 
+    //unused helper function, used for scrolling, keep for implementation
     pub fn change_input(&mut self) {
         match self.input_state {
             Some(0) => self.input_mode = InputState::Minute,
-            Some(1) => self.input_mode = InputState::Script,
+            Some(1) => self.input_mode = InputState::Hour,
+            Some(2) => self.input_mode = InputState::Periodic,
+            Some(3) => self.input_mode = InputState::Weekday,
+            Some(4) => self.input_mode = InputState::Script,
+            Some(5) => self.input_mode = InputState::Confirm,
             None => self.input_mode = InputState::Idle,
             _ => {}
         };
-    }
-    
-    pub fn reset_cursor(&mut self) {
-        self.character_index = 0;
     }
     pub fn clear_fields(&mut self) {
         self.minute_buffer.clear();
