@@ -7,32 +7,26 @@ use ratatui::widgets::{Block, Paragraph, Row, Table};
 use crate::app::{App, CurrentTab, InputState};
 use crate::ui::render_ui;
 
+#[derive(Clone)]
 pub struct CronTask {
     pub minute: String,
     pub hour: String,
-    pub time: String,
     pub weekday: String,
     pub command: String,
-    pub periodic: bool,
+    pub periodic: String,
     //pub tasks: Vec<CronTask>, //this shouldn't be 'apart' of the cron task. the cron task struct should contain the info to formulate a task.
 }
 
 impl CronTask {
-    pub fn new(minute: String, hour: String, weekday: String, command: String, periodic: bool) -> CronTask {
+    pub fn new(minute: String, hour: String, weekday: String, command: String, periodic: String) -> CronTask {
         CronTask {
             minute,
             hour,
-            time,
             weekday,
             command,
             periodic,
         }
     }
-
     //todo? find a way to formulate the cron task struct into a list / database vector OF cron tasks.
-    pub fn form_task(&mut self, app: &mut App) {
-        
-    }
-    pub fn get_logs() {}
 }
 

@@ -2,15 +2,6 @@ use ratatui::{prelude::*, widgets::*};
 use std::clone::Clone;
 use std::{io, error};
 use crate::CronTask;
-use itertools::Itertools;
-use style::palette::tailwind;
-
-const PALETTES: [tailwind::Palette; 4] = [
-    tailwind::BLUE,
-    tailwind::EMERALD,
-    tailwind::INDIGO,
-    tailwind::RED,
-];
 
 struct TableColors {
     buffer_bg: Color,
@@ -22,22 +13,6 @@ struct TableColors {
     alt_row_color: Color,
     footer_border_color: Color,
 }
-
-impl TableColors {
-    const fn new(color: &tailwind::Palette) -> Self {
-        Self {
-            buffer_bg: tailwind::SLATE.c950,
-            header_bg: color.c900,
-            header_fg: tailwind::SLATE.c200,
-            row_fg: tailwind::SLATE.c200,
-            selected_style_fg: color.c400,
-            normal_row_color: tailwind::SLATE.c950,
-            alt_row_color: tailwind::SLATE.c900,
-            footer_border_color: color.c400,
-        }
-    }
-}
-
 //GUIDE CODE
 pub enum CurrentTab {
     Menu,
@@ -56,6 +31,7 @@ pub enum InputState {
     Idle,
     Minute,
     Hour,
+    Periodic,
     Script,
     Weekday,
     Confirm,
@@ -79,7 +55,7 @@ pub struct App {
     pub command_buffer: String,
     pub periodic_buffer: bool,
     pub formatted_cron: String,
-    pub colors: TableColors,
+    pub periodic_text: String
 }
 
 //App method, pass to main
@@ -111,7 +87,7 @@ impl App {
             command_buffer: String::new(),
             periodic_buffer: false,
             formatted_cron: String::new(),
-            colors: TableColors::new(&PALETTES[0]),
+            periodic_text: String::new(),
         }
     }
     //unused helper function
@@ -143,32 +119,6 @@ impl App {
         };
         self.tab_state.select(Some(i));
     }
-/*
-    pub fn inc_buffer(&mut self, max: usize)  {
-        let mut i = self.num_buffer;
-                if i == max - 1 {
-                    i = 0;
-                }
-                else {
-                    i += 1;
-                }
-        self.num_buffer = i;
-    }
-
-    pub fn previous_input(&mut self) {
-        let v = match self.input_state {
-            Some(v) => {
-                if v >= 1 {
-                    0
-                } else {
-                    v + 1
-                }
-            }
-            None => 0,
-        };
-        self.input_state = Some(v);
-    }
-    */
     pub fn next_input(&mut self) {
         let v = match self.input_state {
             Some(v) => {
@@ -238,21 +188,30 @@ impl App {
         self.periodic_buffer = false;
     }
     pub fn push_task(&mut self) {
+        self.periodic_text = if self.periodic_buffer {
+            String::from("Periodic")
+        }
+        else{
+            String::from("On")
+        };
+        
         let crontask = CronTask::new(
             self.minute_buffer.to_owned(),
             self.hour_buffer.to_owned(),
             self.weekday_buffer.to_owned(),
             self.command_buffer.to_owned(),
-            self.periodic_buffer.to_owned(),
+            self.periodic_text.to_owned(),
         );
+        
+        self.tasks.push(crontask);
         self.clear_fields();
         self.input_mode = InputState::Idle;
     }
     pub fn exit(&mut self) {
         self.exit = true;
     }
-    pub fn format_task(&mut self) -> String {
-        if self.periodic_buffer == true {
+    pub fn task_format(&mut self) -> String {
+        if self.periodic_buffer {
            let periodic = format!("*/{} */{} * * {} {}", self.minute_buffer, self.hour_buffer, self.weekday_buffer, self.command_buffer);
             //self.formatted_cron = periodic.clone();
             periodic
@@ -262,18 +221,5 @@ impl App {
             //self.formatted_cron = once.clone();
             once
         }
-    }
-    pub fn make_task(&mut self, cron: &mut CronTask) {
-        let task = CronTask::new(
-            self.minute_buffer.to_owned(),
-            self.hour_buffer.to_owned(),
-            self.command_buffer.to_owned(),
-            self.weekday_buffer.to_owned(),
-            self.periodic_buffer.to_owned()
-        );
-        
-        self.tasks.push(task);
-        self.clear_fields();
-        self.input_mode = InputState::Idle
     }
 }

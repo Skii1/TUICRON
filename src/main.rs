@@ -1,4 +1,3 @@
-use std::error::Error;
 use crossterm::event::DisableMouseCapture;
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -7,19 +6,20 @@ use crossterm::{
     ExecutableCommand,
 };
 use ratatui::{prelude::*, widgets::*};
+use std::error::Error;
 use std::io::{self, stdout};
 use std::rc::Rc;
 
 mod app;
-mod ui;
 mod cron;
+mod ui;
 
+use crate::app::InputState;
+use crate::cron::CronTask;
 use crate::{
     app::{App, CurrentTab},
     ui::*,
 };
-use crate::app::InputState;
-use crate::cron::CronTask;
 
 //boilerplate
 fn main() -> Result<(), Box<dyn Error>> {
@@ -74,135 +74,141 @@ fn key_handler(app: &mut App) {
                 CurrentTab::Options => match key.code {
                     _ => {}
                 },
-                
+
                 CurrentTab::Edit => match key.code {
                     KeyCode::Enter => {}
-                    KeyCode::Up  => app.next_input(),
+                    KeyCode::Up => app.next_input(),
 
                     _ => {}
                 },
 
                 CurrentTab::New => match app.input_mode {
+                    InputState::Idle => match key.code {
+                        KeyCode::Char('n') => {
+                            app.input_mode = InputState::Minute;
+                        }
+                        KeyCode::Esc => {}
+                        _ => {}
+                    },
 
-                    InputState::Idle =>
+                    InputState::Minute => match key.code {
+                        KeyCode::Esc => {
+                            app.input_mode = InputState::Idle;
+                        }
 
-                        match key.code {
+                        KeyCode::Char(c) => {
+                            app.minute_buffer.push(c);
+                        }
 
-                            KeyCode::Char('n') => {
-                                app.input_mode = InputState::Minute;
+                        KeyCode::Backspace => {
+                            app.minute_buffer.pop();
+                        }
+
+                        KeyCode::Enter => {
+                            app.input_mode = InputState::Hour;
+                        }
+
+                        _ => {}
+                    },
+
+                    InputState::Hour => match key.code {
+                        KeyCode::Esc => {
+                            app.input_mode = InputState::Idle;
+                        }
+
+                        KeyCode::Char(c) => {
+                            app.hour_buffer.push(c);
+                        }
+
+                        KeyCode::Backspace => {
+                            app.hour_buffer.pop();
+                        }
+
+                        KeyCode::Enter => {
+                            app.input_mode = InputState::Periodic;
+                        }
+
+                        _ => {}
+                    },
+
+                    InputState::Periodic => match key.code {
+                        KeyCode::Esc => {
+                            app.input_mode = InputState::Idle;
+                        }
+                        KeyCode::Char('p') => {
+                            if app.periodic_buffer {
+                                app.periodic_buffer = false;
+                                app.periodic_text = String::from("Once")
+                            } else {
+                                app.periodic_buffer = true;
+                                app.periodic_text = String::from("Periodic")
                             }
-                            KeyCode::Esc => {}
-                            _ => {}
-                        },
+                        }
+                        KeyCode::Enter => {
+                            app.input_mode = InputState::Weekday;
+                        }
 
-                    InputState::Minute =>
-                        match key.code {
-                            KeyCode::Esc => {
-                                app.input_mode = InputState::Idle;
-                            },
+                        _ => {}
+                    },
 
-                            KeyCode::Char(c) => {
-                                app.minute_buffer.push(c);
-                            },
+                    InputState::Weekday => match key.code {
+                        KeyCode::Esc => {
+                            app.input_mode = InputState::Idle;
+                        }
 
-                            KeyCode::Backspace => {
-                                app.minute_buffer.pop();
-                            },
+                        KeyCode::Char(c) => {
+                            app.weekday_buffer.push(c);
+                        }
 
-                            KeyCode::Enter => {
-                                app.input_mode = InputState::Hour;
-                            },
-                            
-                            _ => {}
-                        },
+                        KeyCode::Backspace => {
+                            app.weekday_buffer.pop();
+                        }
 
-                    InputState::Hour =>
-                        match key.code {
-                            KeyCode::Esc => {
-                                app.input_mode = InputState::Idle;
-                            },
+                        KeyCode::Enter => {
+                            app.input_mode = InputState::Script;
+                        }
 
-                            KeyCode::Char(c) => {
-                                app.hour_buffer.push(c);
-                            },
+                        _ => {}
+                    },
 
-                            KeyCode::Backspace => {
-                                app.hour_buffer.pop();
-                            },
+                    InputState::Script => match key.code {
+                        KeyCode::Esc => {
+                            app.input_mode = InputState::Idle;
+                        }
 
-                            KeyCode::Enter => {
-                                app.input_mode = InputState::Weekday;
-                            },
+                        KeyCode::Char(c) => {
+                            app.command_buffer.push(c);
+                        }
 
-                            _ => {}
-                        },
+                        KeyCode::Backspace => {
+                            app.command_buffer.pop();
+                        }
 
-                   
+                        KeyCode::Enter => {
+                            app.input_mode = InputState::Confirm;
+                        }
 
-                    InputState::Weekday =>
-                        match key.code {
+                        _ => {}
+                    },
 
-                            KeyCode::Esc => {
-                                app.input_mode = InputState::Idle;
-                            },
+                    InputState::Confirm => match key.code {
+                        KeyCode::Esc => app.input_mode = InputState::Idle,
 
-                            KeyCode::Char(c) => {
-                                app.weekday_buffer.push(c);
-                            },
+                        KeyCode::Enter => {
+                            app.push_task();
+                            app.input_mode = InputState::Idle;
+                        }
 
-                            KeyCode::Backspace => {
-                                app.weekday_buffer.pop();
-                            },
+                        KeyCode::Backspace => {
+                            app.input_mode = InputState::Minute;
+                        }
 
-                            KeyCode::Enter => {
-                                app.input_mode = InputState::Script;
-                            },
-
-                            _ => {}
-                        },
-
-                    InputState::Script =>
-                        match key.code {
-
-                            KeyCode::Esc => {
-                                app.input_mode = InputState::Idle;
-                            },
-
-                            KeyCode::Char(c) => {
-                                app.command_buffer.push(c);
-                            },
-
-                            KeyCode::Backspace => {
-                                app.command_buffer.pop();
-                            },
-
-                            KeyCode::Enter => {
-                                app.input_mode = InputState::Confirm;
-                            },
-
-                            _ => {}
-                        },
-                    
-                    InputState::Confirm =>
-                        match key.code {
-                            KeyCode::Esc => app.input_mode = InputState::Idle,
-
-                            KeyCode::Enter => {
-                                app.push_task();
-                                app.input_mode = InputState::Idle;
-                            }
-
-                            KeyCode::Backspace => {
-                                app.input_mode = InputState::Minute;
-                            }
-
-                            _ => {}
-                        },
-                }
+                        _ => {}
+                    },
+                },
 
                 //Exit Key Binds
                 CurrentTab::Exit => match key.code {
-
                     KeyCode::Char('y') | KeyCode::Char('Y') => {
                         app.exit();
                     }
@@ -210,7 +216,6 @@ fn key_handler(app: &mut App) {
                         app.selected_tab = CurrentTab::Menu;
                     }
                     _ => {}
-
                 },
             };
         }

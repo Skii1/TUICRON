@@ -28,7 +28,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App) {
     let tab_frame = tab_frame(f, app, layout[1]);
 
     //TAB BODY
-    render_tab(f, app,tab_frame);
+    render_tab(f, app, tab_frame);
 
     //FOOTER
     render_footer(f, app, layout[2]);
@@ -146,87 +146,89 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     let fields = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(5),
+            Constraint::Min(3),
+            Constraint::Min(3),
             Constraint::Length(3),
             Constraint::Length(3),
             Constraint::Min(3),
             Constraint::Min(5),
         ])
         .split(window[1]);
-    
+
     let time = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(50),
-        Constraint::Percentage(50)
+            Constraint::Percentage(40),
+            Constraint::Percentage(40),
+            Constraint::Percentage(20),
         ])
-        .split(fields[1]);
+        .split(fields[2]);
 
-    let mut context = Paragraph::new("Press 'n' to make a new new cron task. Yellow highlighting indicates the selected item you are editing. Edit the values in the example format, shown while unselected")
+    //Context Block init
+    let mut context = Paragraph::new("")
         .block(Block::bordered().title("Context"))
         .wrap(Wrap { trim: true });
     
-    let input_style = Style::default().fg(Color::Green);
-    
-    let mut title_block = Paragraph::new("Placeholder")
-        .block(Block::bordered().title("TITLE"))
-        .wrap(Wrap { trim: true });
-    
+    //Minute Field
     let minute_text = if app.minute_buffer.is_empty() {
         String::from("Enter Minute : ")
-    }
-    else {
+    } else {
         app.minute_buffer.clone()
     };
-    let mut minute_block =
-        Paragraph::new(minute_text).block(Block::bordered().title("Minute"));
+    let mut minute_block = Paragraph::new(minute_text).block(Block::bordered().title("Minute"));
 
+    //Hour Field
     let hour_text = if app.minute_buffer.is_empty() {
         String::from("Enter Hour : ")
-    }
-    else {
+    } else {
         app.hour_buffer.clone()
     };
-    let mut hour_block =
-        Paragraph::new(hour_text).block(Block::bordered().title("Hour"));
+    let mut hour_block = Paragraph::new(hour_text).block(Block::bordered().title("Hour"));
+
+    //Periodic Field
+    let periodic_text = if app.periodic_buffer{
+        String::from("Periodic")
+    } else {
+        String::from("Once")
+    };
+    let mut periodic_block = Paragraph::new(periodic_text).block(Block::bordered().title("Hour"));
     
+    //Command Field
     let command_text = if app.minute_buffer.is_empty() {
         String::from("Enter Minute : ")
-    }
-    else {
+    } else {
         app.command_buffer.clone()
     };
     let mut command_block = Paragraph::new(command_text)
         .block(Block::bordered().title("Command"))
         .wrap(Wrap { trim: true });
-    
+
     let weekday_text = if app.minute_buffer.is_empty() {
         String::from("Enter a value, in a range, a-b, where a and b are day values, 0 indexed from Sunday. (e.g : 1-5 is running Monday to Friday")
-    }
-    else {
+    } else {
         app.weekday_buffer.clone()
     };
-    
+
     let mut weekday_block = Paragraph::new(weekday_text)
         .block(Block::bordered().title("Weekday(s)"))
         .wrap(Wrap { trim: true });
-    
-    let mut preview = Paragraph::new(app.format_task())
+
+    let mut preview = Paragraph::new(app.task_format())
         .block(Block::bordered().title("Preview Task"))
         .wrap(Wrap { trim: true });
-    
+
     match app.input_mode {
         InputState::Idle => {
-            context = Paragraph::new("Press (CTRL + P) at anytime to switch a task to be periodic. Periodic tasks will run at every specified time frame instead of on that time of day. (e.g, 09:45 non periodic runs at 9:45 AM, 9:45 Periodic runs every 9 hours and 45 minutes")
+            context = Paragraph::new("Create a new task with (N). Find Tooltips on each field in this box, with information on how to select an option, and what the option does.")
                 .block(Block::bordered().title("Context"))
                 .wrap(Wrap { trim: true });
         }
-        
+
         InputState::Minute => {
             context = Paragraph::new("Enter a value in minutes (0-59).")
                 .block(Block::bordered().title("Context"))
                 .wrap(Wrap { trim: true });
-            
+
             let input = Text::from(vec![Line::from(vec![
                 "".into(),
                 app.minute_buffer.clone().red(),
@@ -242,7 +244,7 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
             context = Paragraph::new("Enter a value in hours (0-23).")
                 .block(Block::bordered().title("Context"))
                 .wrap(Wrap { trim: true });
-            
+
             let input = Text::from(vec![Line::from(vec![
                 "".into(),
                 app.hour_buffer.clone().red(),
@@ -251,13 +253,30 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
                 .style(Style::default().fg(Color::Yellow))
                 .block(Block::bordered().title("Edit Hour"));
 
-           hour_block = hour_txt;
+            hour_block = hour_txt;
         }
+
+        InputState::Periodic => {
+            context = Paragraph::new("Cycle through the period type with (P). \"Once\" indicates a task will run on the time specified, while \"Periodic\" indicates a task running every specified time. (e.g, 5:30 Once will run at 5:30 every specified day, while Periodic will run every 5 hours and 30 minutes during the specified days ")
+                .block(Block::bordered().title("Context"))
+                .wrap(Wrap { trim: true });
+
+            let input = Text::from(vec![Line::from(vec![
+                "".into(),
+                app.periodic_text.clone().green(),
+            ])]);
+            let periodic_txt = Paragraph::new(input)
+                .style(Style::default().fg(Color::Yellow))
+                .block(Block::bordered().title("Edit Hour"));
+
+            periodic_block = periodic_txt;
+        }
+        
         InputState::Script => {
             context = Paragraph::new("Enter a command, or script path to be run here.")
                 .block(Block::bordered().title("Context"))
                 .wrap(Wrap { trim: true });
-            
+
             let input = Text::from(vec![Line::from(vec![
                 "Command | ".into(),
                 app.command_buffer.clone().red(),
@@ -273,7 +292,7 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
             context = Paragraph::new("Enter a day, or a range of days of the week for the task to be run. (Values are indexed 0-7, where Sunday is either 0 or 7. Monday is 1. Indicate a range of days by separating with a dash. (e.g, 1-5 is Monday to Friday")
                 .block(Block::bordered().title("Context"))
                 .wrap(Wrap { trim: true });
-            
+
             let input = Text::from(vec![Line::from(vec![
                 "d-d | ".into(),
                 app.weekday_buffer.clone().red(),
@@ -289,41 +308,38 @@ fn new_tab(f: &mut Frame, app: &mut App, tab: Rect) {
             context = Paragraph::new("Ready to add this task? Press (Enter) to submit it, or (Backspace) to edit your options")
                 .block(Block::bordered().title("Context"))
                 .wrap(Wrap { trim: true });
-           // let confirm = Paragraph::new("Would you like to add this task? Please check the preview and ensure everything is correct before submitting.");
+            // let confirm = Paragraph::new("Would you like to add this task? Please check the preview and ensure everything is correct before submitting.");
             //let mut preview_block = preview.block(Block::bordered());
 
             //title_block = preview_block;
         }
         _ => {}
     };
-    
+
     //render all tabs
     f.render_widget(context, window[0]);
     f.render_widget(preview, fields[0]);
+    preview_task(app, f, fields[1]);
     f.render_widget(minute_block, time[0]);
     f.render_widget(hour_block, time[1]);
-    f.render_widget(weekday_block, fields[2]);
-    f.render_widget(command_block, fields[3]);
-    preview_task(app, f, fields[4]);
-    render_cronlist(f, window[2]);
+    f.render_widget(periodic_block, time[2]);
+    f.render_widget(weekday_block, fields[3]);
+    f.render_widget(command_block, fields[4]);
+    task_list(app, f, window[2]);
 }
 
 fn edit_tab(f: &mut Frame, app: &mut App, tab: Rect) {
     let mut window = Layout::default()
-        .direction(Direction::Vertical)
+        .direction(Direction::Horizontal)
         .constraints([Constraint::Length(25), Constraint::Percentage(80)])
         .split(tab);
 
-    let context = Paragraph::new("Edit the tab").block(Block::bordered().title("Edit tab"));
-    let other = Paragraph::new("we are locked in!").block(Block::bordered().title("Time"));
+    let context = Paragraph::new("View CRON tasks in different modes here. You can either present a list in a table form, which is more readable, or in raw form, as you would put them into the crontab file itself. Editing Tasks coming soon!")
+        .block(Block::bordered().title("Context"));
+    let other = Paragraph::new("View CRON tasks").block(Block::bordered().title("Title"));
     f.render_widget(context, window[0]);
 
-    let schedule_block =
-        Paragraph::new("EDIT CRON").block(Block::bordered().title("Modify Schedule"));
-    f.render_widget(schedule_block, window[0]);
-
-    let path_block = Paragraph::new("EDIT Script Path : /home/pi/scripts/do.sh")
-        .block(Block::bordered().title("Script Path"));
+    let path_block = Paragraph::new("Cron Table Here").block(Block::bordered().title("Cron Tasks"));
     f.render_widget(path_block, window[1]);
 }
 
@@ -337,9 +353,9 @@ fn options_tab(f: &mut Frame, app: &mut App, tab: Rect) {
         ])
         .split(tab);
 
-    let items = ["Item 1", "Item 2", "Item 3"];
+    let items = ["Controls", "Preferences", "Credits"];
     let options = List::new(items)
-        .block(Block::bordered().title("Options List"))
+        .block(Block::bordered().title("Options Menu"))
         .style(Style::default().fg(Color::White))
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
         .highlight_symbol(">>")
@@ -347,151 +363,80 @@ fn options_tab(f: &mut Frame, app: &mut App, tab: Rect) {
         .direction(ListDirection::TopToBottom);
     let mut option_state = ListState::default();
     option_state.select(Some(0));
-    let context = Paragraph::new("Here's a quick description of what this item does")
+
+    let context = Paragraph::new("This will be implemented at a future date!")
         .block(Block::bordered().title("Context"));
     f.render_stateful_widget(options, window[0], &mut option_state);
     f.render_widget(context, window[1]);
 
-    let schedule_block =
-        Paragraph::new("EDIT CRON").block(Block::bordered().title("Modify Schedule"));
+    let schedule_block = Paragraph::new("Coming Soon").block(Block::bordered().title("Window 1"));
     f.render_widget(schedule_block, window[0]);
 
-    let path_block = Paragraph::new("EDIT Script Path : /home/pi/scripts/do.sh")
-        .block(Block::bordered().title("Script Path"));
+    let path_block = Paragraph::new("Coming Soon").block(Block::bordered().title("Window 2"));
     f.render_widget(path_block, window[1]);
 }
 
 fn exit_tab(f: &mut Frame, app: &mut App, tab: Rect) {
-    let mut window = Layout::default()
+    let window = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
+        .constraints([
+            Constraint::Percentage(20),
+            Constraint::Fill(1),
+            Constraint::Percentage(20),
+        ])
         .split(tab);
 
-    let context = Paragraph::new("Main menu context").block(Block::bordered().title("Context"));
-    let other = Paragraph::new("we are locked in!").block(Block::bordered().title("Other"));
-    f.render_widget(context, window[0]);
-    f.render_widget(other, window[1]);
-
-    let popup_block = Block::default()
-        .title("Y/N")
-        .borders(Borders::TOP)
-        .title("Exit?")
-        .style(Style::default().bg(Color::Rgb(7, 3, 252)).bold().italic());
-
-    let exit_text = Text::styled(
-        "Would you like exit the app? (Y/N)",
-        Style::default().fg(Color::White).bold(),
-    );
-    // the `trim: false` will stop the text from being cut off when over the edge of the block
-    let exit_paragraph = Paragraph::new(exit_text)
-        .block(popup_block)
-        .wrap(Wrap { trim: false });
-
-    let area = centered_rect(20, 25, f.size());
-    f.render_widget(exit_paragraph, area);
-}
-
-/// helper function to create a centered rect using up certain percentage of the available rect `r` probably useless
-fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
-    // Cut the given rectangle into three vertical pieces
-    let popup_layout = Layout::default()
+    let exit_window = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Percentage((80 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
-            Constraint::Percentage((80 - percent_y) / 2),
+            Constraint::Percentage(20),
+            Constraint::Fill(1),
+            Constraint::Percentage(20),
         ])
-        .split(r);
-    // Then cut the middle vertical piece into three width-wise pieces
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((60 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
-            Constraint::Percentage((60 - percent_x) / 2),
-        ])
-        .split(popup_layout[1])[1] // Return the middle chunk
-}
+        .split(window[1]);
 
-//parameters TBD. Since a state will be held, should it reference just app? or cron?
-
-pub fn render_cronlist(f: &mut Frame, app: &mut App, window: Rect) {
-    let row = [Row::new((vec!["Task", "Time", "Weekday(s)"]))];
-    let rows =app.tasks.iter().enumerate().map(|(i, data))
-    let widths = [
-        Constraint::Fill(1),
-        Constraint::Fill(1),
-        Constraint::Fill(1),
-    ];
-
-    let table = Table::new(row, widths)
-        .column_spacing(1)
-        .style(Style::new().red())
-        .header(
-            Row::new(vec!["Task", "Time", "Weekday(s)"])
-                .style(Style::new().bold())
-                .bottom_margin(1),
-        )
-        .footer(Row::new(vec!["Footer"]))
-        .block(Block::bordered().title("CRONTable"))
-        .highlight_style(Style::new().reversed())
-        .highlight_symbol("[]");
-    f.render_widget(table, window);
+    let other =
+        Paragraph::new("Would you like to exit? Ensure all changes are saved before closing.")
+            .block(Block::bordered().title("Exit? (Y/N)"))
+            .style(Style::new().bg(Color::Rgb(0, 0, 55)));
+    f.render_widget(other, exit_window[1]);
 }
 
 pub fn preview_task(app: &mut App, f: &mut Frame, area: Rect) {
-    let task = Paragraph::new(
-        format!("CRON : {} at {}:{} on day(s) {}", app.command_buffer, app.hour_buffer, app.minute_buffer, app.weekday_buffer))
-        .block(Block::bordered());
+    let task = Paragraph::new(format!(
+        "CRON : {} at {}:{} on day(s) {}",
+        app.command_buffer, app.hour_buffer, app.minute_buffer, app.weekday_buffer
+    ))
+    .block(Block::bordered());
     f.render_widget(task, area);
 }
 
-fn render_table(f: &mut Frame, app: &mut App, area: Rect) {
-    let header_style = Style::default()
-        .fg(app.colors.header_fg)
-        .bg(app.colors.header_bg);
-    let selected_style = Style::default()
-        .add_modifier(Modifier::REVERSED)
-        .fg(app.colors.selected_style_fg);
-
-    let header = ["Name", "Address", "Email"]
+pub fn task_list(app: &mut App, f: &mut Frame, area: Rect) {
+    let items: Vec<ListItem> = app
+        .tasks
+        .clone()
         .into_iter()
-        .map(Cell::from)
-        .collect::<Row>()
-        .style(header_style)
-        .height(1);
-    let rows = app.items.iter().enumerate().map(|(i, data)| {
-        let color = match i % 2 {
-            0 => app.colors.normal_row_color,
-            _ => app.colors.alt_row_color,
-        };
-        let item = data.ref_array();
-        item.into_iter()
-            .map(|content| Cell::from(Text::from(format!("\n{content}\n"))))
-            .collect::<Row>()
-            .style(Style::new().fg(app.colors.row_fg).bg(color))
-            .height(4)
-    });
-    let bar = " █ ";
-    let t = Table::new(
-        rows,
-        [
-            // + 1 is for padding.
-            Constraint::Length(10),
-            Constraint::Min(5),
-            Constraint::Min(5),
-        ],
-    )
-        .header(header)
-        .highlight_style(selected_style)
-        .highlight_symbol(Text::from(vec![
-            "".into(),
-            bar.into(),
-            bar.into(),
-            "".into(),
-        ]))
-        .bg(app.colors.buffer_bg)
-        .highlight_spacing(HighlightSpacing::Always);
-    //f.render_stateful_widget(t, area, &mut app.state); implement navigation later
-    f.render_widget(t, area);
+        .map(|item| {
+            ListItem::new(format!(
+                "{} | {}:{} | {} | {}",
+                item.periodic.to_owned(),
+                item.hour.to_owned(),
+                item.minute.to_owned(),
+                item.weekday.to_owned(),
+                item.command.to_owned()
+            ))
+        })
+        .collect();
+
+    let list_chunks = Layout::default()
+        .margin(2)
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Min(1)].as_ref())
+        .split(area);
+
+    let list = List::new(items)
+        .block(Block::bordered().title("CRONlist"))
+        .highlight_symbol("->")
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD));
+    f.render_widget(list, area);
 }
