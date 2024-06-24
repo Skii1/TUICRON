@@ -1,6 +1,8 @@
 use ratatui::{prelude::*, widgets::*};
 use std::clone::Clone;
-use std::{io, error};
+use std::{io, error, fs};
+use std::io::Error;
+use std::path::Path;
 use crate::CronTask;
 
 struct TableColors {
@@ -13,6 +15,7 @@ struct TableColors {
     alt_row_color: Color,
     footer_border_color: Color,
 }
+
 //GUIDE CODE
 pub enum CurrentTab {
     Menu,
@@ -26,6 +29,7 @@ pub enum Focused {
     Menu,
     Tab,
 }
+
 //GUIDE CODE
 pub enum InputState {
     Idle,
@@ -36,6 +40,7 @@ pub enum InputState {
     Weekday,
     Confirm,
 }
+
 pub struct App {
     pub selected_tab: CurrentTab,
     pub currently_editing: Option<InputState>,
@@ -52,11 +57,11 @@ pub struct App {
     pub task_list: Vec<CronTask>,
     pub minute_buffer: String,
     pub hour_buffer: String,
-    pub weekday_buffer:String,
+    pub weekday_buffer: String,
     pub command_buffer: String,
     pub periodic_buffer: bool,
     pub formatted_cron: String,
-    pub periodic_text: String
+    pub periodic_text: String,
 }
 
 //App method, pass to main
@@ -67,7 +72,7 @@ impl App {
             selected_tab: CurrentTab::Menu,
             character_index: 0,
             input_mode: InputState::Idle,
-            messages: Vec::new(), 
+            messages: Vec::new(),
             currently_editing: None,
             tab_state: ListState::default().with_selected(Some(0)),
             tabs: vec![
@@ -99,7 +104,7 @@ impl App {
             periodic_text: String::new(),
         }
     }
- 
+
     //Input state vs Input mode. Input state is the numerical index (usize), which is translated into "input mode", with the InputState type enum.
     pub fn previous_field(&mut self) {
         let i = match self.input_state {
@@ -115,7 +120,7 @@ impl App {
         self.input_state = Some(i);
         self.change_input();
     }
-    
+
     pub fn next_field(&mut self) {
         let i = match self.input_state {
             Some(i) => {
@@ -130,7 +135,7 @@ impl App {
         self.input_state = Some(i);
         self.change_input();
     }
- 
+
     //Equivalent to the next function, just for scrolling tabs with one key
     pub fn scroll_tab(&mut self) {
         if self.option == self.tabs.len() - 1 {
@@ -190,11 +195,10 @@ impl App {
     pub fn push_task(&mut self) {
         self.periodic_text = if self.periodic_buffer {
             String::from("Periodic")
-        }
-        else{
+        } else {
             String::from("On")
         };
-        
+
         let crontask = CronTask::new(
             self.minute_buffer.to_owned(),
             self.hour_buffer.to_owned(),
@@ -202,7 +206,7 @@ impl App {
             self.command_buffer.to_owned(),
             self.periodic_text.to_owned(),
         );
-        
+
         self.tasks.push(crontask);
         self.clear_fields();
         self.input_mode = InputState::Idle;
@@ -212,14 +216,37 @@ impl App {
     }
     pub fn task_format(&mut self) -> String {
         if self.periodic_buffer {
-           let periodic = format!("*/{} */{} * * {} {}", self.minute_buffer, self.hour_buffer, self.weekday_buffer, self.command_buffer);
+            let periodic = format!("*/{} */{} * * {} {}", self.minute_buffer, self.hour_buffer, self.weekday_buffer, self.command_buffer);
             //self.formatted_cron = periodic.clone();
             periodic
-        }
-        else {
+        } else {
             let once = format!("{} {} * * {} {}", self.minute_buffer, self.hour_buffer, self.weekday_buffer, self.command_buffer);
             //self.formatted_cron = once.clone();
             once
         }
+    }
+    pub fn create_path(&mut self) {
+        let mut message: &str = "none";
+        let path: &str = "./data";
+        fs::create_dir("./data");
+        let my_path: &Path = std::path::Path::new(path);
+        if my_path.exists() {
+            message = "Found existing data file path.";
+            return;
+        }
+        let create_dir_result: Result<(), Error> = fs::create_dir(path);
+        if create_dir_result.is_ok() {
+            message = "New data directory created."
+        } else {
+            let error = format!("An errror occured while creating the save data directory : {:?}", create_dir_result.err());
+        }
+    }
+    pub fn make_data(&mut self) {
+        let path: &str = "./data/file.txt";
+        let path2: &str = "./data/cronsave.txt";
+        let text: &str = "Hello, world!!!";
+        let crondata = &self.tasks;
+        _ = std::fs::write(path, text);
+        _ = std::fs::write(path2, crondata);
     }
 }

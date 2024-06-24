@@ -1,3 +1,4 @@
+//library imports
 use crossterm::event::DisableMouseCapture;
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -13,12 +14,14 @@ use std::rc::Rc;
 mod app;
 mod cron;
 mod ui;
+mod file;
 
-use crate::app::InputState;
-use crate::cron::CronTask;
+//App file imports
 use crate::{
-    app::{App, CurrentTab},
+    app::{App, CurrentTab, InputState},
     ui::*,
+    cron::CronTask,
+    file::*,
 };
 
 //boilerplate
@@ -69,6 +72,12 @@ fn key_handler(app: &mut App) {
             match app.selected_tab {
                 //Menu Key Binds
                 CurrentTab::Menu => match key.code {
+                    KeyCode::Char('s') => {
+                        app.create_path();
+                    }
+                    KeyCode::Char('m') => {
+                        app.make_data();
+                    }
                     _ => {}
                 },
                 CurrentTab::Options => match key.code {
